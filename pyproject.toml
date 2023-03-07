@@ -55,6 +55,7 @@ prefect = "^2.8.4"
 prefect-dask = "^0.2.3"
 prefect-shell = "^0.1.5"
 ruamel-yaml = "^0.17.21"
+mkdocs-render-swagger-plugin = "^0.0.4"
 
 [tool.poetry.extras]
 test = [
@@ -77,7 +78,8 @@ doc = [
     "mkdocstrings",
     "mkdocstrings-python",
     "mkdocs-material-extension",
-    "mkdocs-autorefs"
+    "mkdocs-autorefs",
+    "mkdocs-render-swagger-plugin"
     ]
 
 [tool.poetry.scripts]

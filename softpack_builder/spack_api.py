@@ -4,6 +4,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import typer
 from prefect import flow, task
 from prefect_dask.task_runners import DaskTaskRunner
 from prefect_shell import ShellOperation
@@ -47,3 +48,11 @@ class SpackAPI:
             None
         """
         distributed_build()
+
+    def status(self):
+        """Show build status.
+
+        Returns:
+            None
+        """
+        typer.echo("OK")

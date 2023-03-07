@@ -9,7 +9,7 @@ You can contribute in many ways:
 
 ### Report Bugs
 
-Report bugs at https://github.com/wtsi-hgi/softpack-builder/issues.
+Report bugs at [https://github.com/wtsi-hgi/softpack-builder/issues](https://github.com/wtsi-hgi/softpack-builder/issues).
 
 If you are reporting a bug, please include:
 
@@ -35,7 +35,7 @@ articles, and such.
 
 ### Submit Feedback
 
-The best way to send feedback is to file an issue at https://github.com/wtsi-hgi/softpack-builder/issues.
+The best way to send feedback is to file an issue at [https://github.com/wtsi-hgi/softpack-builder/issues](https://github.com/wtsi-hgi/softpack-builder/issues).
 
 If you are proposing a feature:
 
@@ -52,7 +52,7 @@ Ready to contribute? Here's how to set up `softpack-builder` for local developme
 2. Clone your fork locally
 
     ```
-    $ git clone git@github.com:your_name_here/softpack-builder.git
+    $ git clone https://github.com/wtsi-hgi/softpack-builder.git
     ```
 
 3. Ensure [poetry](https://python-poetry.org/docs/) is installed.
@@ -95,8 +95,8 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.md.
-3. The pull request should work for Python 3.8, 3.9, and 3.10. Check
-   https://github.com/wtsi-hgi/softpack-builder/actions
+3. The pull request should work for Python 3.8, 3.9, 3.10, and 3.11. Check
+   [https://github.com/wtsi-hgi/softpack-builder/actions](https://github.com/wtsi-hgi/softpack-builder/actions)
    and make sure that the tests pass for all supported Python versions.
 
 ## Tips

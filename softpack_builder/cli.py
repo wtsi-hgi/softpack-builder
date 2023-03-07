@@ -14,7 +14,8 @@ app = typer.Typer()
 @app.command()
 def status():
     """Show SoftPack-Builder status."""
-    typer.echo("SoftPack Status:")
+    spack = SpackAPI()
+    spack.status()
 
 
 @app.command()
