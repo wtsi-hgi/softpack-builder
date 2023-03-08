@@ -6,14 +6,14 @@ LICENSE file in the root directory of this source tree.
 
 import time
 
-from prefect import flow, task
+from prefect import flow, get_run_logger, task
 from prefect_dask.task_runners import DaskTaskRunner
 from prefect_shell import ShellOperation
 
 
 @task
-def simulate_build(timeout=30):
-    """Simulate a build.
+def simulated_build(timeout=30):
+    """Run a simulated build.
 
     Args:
         timeout: number of seconds to wait for the task to finish
@@ -21,9 +21,10 @@ def simulate_build(timeout=30):
     Returns:
         None
     """
+    logger = get_run_logger()
     for i in range(timeout):
         time.sleep(1)
-        print(f"{100*i/timeout:.2f} % complete")
+        logger.info(f"{100*i/timeout:.2f} % complete")
 
 
 @task
@@ -51,7 +52,7 @@ def distributed_build(timeout):
     Returns:
         None
     """
-    result = simulate_build.submit(timeout)
+    result = simulated_build.submit(timeout)
     spack_build.submit(result)
 
 
