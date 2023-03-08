@@ -6,23 +6,22 @@ LICENSE file in the root directory of this source tree.
 
 import typer
 
-from .spack_api import SpackAPI
+from .build_flow import BuildFlow
 
 app = typer.Typer()
 
 
 @app.command()
 def status():
-    """Show SoftPack-Builder status."""
-    spack = SpackAPI()
-    spack.status()
+    """Show service status."""
+    typer.echo("OK")
 
 
 @app.command()
-def build():
-    """Run SoftPack build."""
-    spack = SpackAPI()
-    spack.build()
+def build(timeout: int = 30):
+    """Start a build."""
+    flow = BuildFlow()
+    flow.run(timeout)
 
 
 def main():

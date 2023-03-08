@@ -49,7 +49,7 @@ the [Github repo][].
 You can either clone the public repository:
 
 ``` console
-$ git clone git://github.com/wtsi-hgi/softpack-builder
+$ git clone https://github.com/wtsi-hgi/softpack-builder.git
 ```
 
 Or download the [tarball][]:
@@ -64,13 +64,49 @@ Once you have a copy of the source, you can install it with:
 $ pip install .
 ```
 
+### Development
+
+For development mode, clone the repository and use [Poetry][] to install the
+package.
+
+``` console
+$ git clone https://github.com/wtsi-hgi/softpack-builder.git
+```
+
+Install [Poetry][]:
+
+``` console
+$ pip install poetry
+```
+
+Install [Poetry][] environments for development:
+
+``` console
+poetry install -E doc -E dev -E test
+```
+
+Run tests with [Tox][]
+
+``` console
+poetry run tox
+```
+
+Run [MkDocs] server to view documentation:
+
+``` console
+poetry run mkdocs serve
+```
+
+
 [pip]: https://pip.pypa.io
 [Python installation guide]: http://docs.python-guide.org/en/latest/starting/installation/
 [Github repo]: https://github.com/wtsi-hgi/softpack-builder
 [tarball]: https://github.com/wtsi-hgi/softpack-builder/tarball/master
 [Dask]: https://www.dask.org
 [Prefect]: https://www.prefect.io
-
+[Poetry]: https://python-poetry.org
+[Tox]: https://tox.wiki
+[MkDocs]: https://www.mkdocs.org
 
 ## Credits
 

@@ -4,14 +4,30 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import typer
+import time
+
 from prefect import flow, task
 from prefect_dask.task_runners import DaskTaskRunner
 from prefect_shell import ShellOperation
 
 
 @task
-def spack_build():
+def simulate_build(timeout=30):
+    """Simulate a build.
+
+    Args:
+        timeout: number of seconds to wait for the task to finish
+
+    Returns:
+        None
+    """
+    for i in range(timeout):
+        time.sleep(1)
+        print(f"{100*i/timeout:.2f} % complete")
+
+
+@task
+def spack_build(input):
     """Run a spack build.
 
     Returns:
@@ -29,30 +45,26 @@ def spack_build():
 
 
 @flow(task_runner=DaskTaskRunner())
-def distributed_build():
+def distributed_build(timeout):
     """Run a distributed build.
 
     Returns:
         None
     """
-    spack_build.submit()
+    result = simulate_build.submit(timeout)
+    spack_build.submit(result)
 
 
-class SpackAPI:
-    """Spack API wrapper class."""
+class BuildFlow:
+    """BuildFlow class for triggering a distributed build."""
 
-    def build(self):
-        """Run SpackAPI build.
+    def run(self, timeout):
+        """Run distributed build.
 
-        Returns:
-            None
-        """
-        distributed_build()
-
-    def status(self):
-        """Show build status.
+        Args:
+            timeout: timeout for the build
 
         Returns:
             None
         """
-        typer.echo("OK")
+        distributed_build(timeout)

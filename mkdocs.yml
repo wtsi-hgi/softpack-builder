@@ -10,11 +10,11 @@ nav:
   - Tutorials:
     - tutorials/getting_started.md
   - Guides:
-      - guides/how-to-manually-start-a-build.md
+      - guides/how-to-start-a-build.md
   - Reference:
     - reference/cli.md
-    - reference/rest.md
     - reference/api.md
+    - reference/rest.md
   - Contributing: contributing.md
   - Changelog: changelog.md
 theme:
