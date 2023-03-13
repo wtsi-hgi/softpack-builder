@@ -5,5 +5,17 @@ LICENSE file in the root directory of this source tree.
 """
 
 
-async def async_exec(func, *args):
+from typing import Any
+
+
+async def async_exec(func, *args) -> Any:
+    """Execute an exec function.
+
+    Args:
+        func: Function to call.
+        *args: List of arguments to pass to the function.
+
+    Returns:
+        Any: Return value from the function called.
+    """
     return func(*args)

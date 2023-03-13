@@ -17,6 +17,11 @@ cli.add_typer(environment.commands, name="environment")
 
 @cli.command()
 def service():
+    """Start the SoftPack Builder REST API service.
+
+    Returns:
+        None.
+    """
     uvicorn.run(
         "softpack_builder.app:app",
         host=settings.server.host,

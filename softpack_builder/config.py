@@ -13,18 +13,26 @@ from pydantic.env_settings import SettingsSourceCallable
 
 
 class ServerConfig(BaseModel):
+    """Server config model."""
+
     host: str
     port: int
 
 
 class ArtifactsConfig(BaseModel):
+    """Artifacts config model."""
+
     class Repo(BaseModel):
+        """Repo model."""
+
         uri: AnyHttpUrl
         token: str
 
     repo: Repo
 
     class ORAS(BaseModel):
+        """ORAS model."""
+
         uri: AnyHttpUrl
         username: str
         token: str
@@ -52,11 +60,11 @@ class Settings(BaseSettings):
             """Load settings from file.
 
             Args:
-                path: config file path
-                settings: base settings object
+                path: Config file path.
+                settings: Base settings object.
 
             Returns:
-                dictionary of settings
+                dict[str, Any]: A dictionary of settings.
             """
             if not path.is_file():
                 return settings.dict()
@@ -65,12 +73,30 @@ class Settings(BaseSettings):
 
         @classmethod
         def defaults(cls, settings: BaseSettings) -> dict[str, Any]:
+            """Load defaults from config file.
+
+            Args:
+                settings: BaseSettings model.
+
+            Returns:
+               dict[str, Any]: Settings loaded from default config file.
+
+            """
             package_dir = Path(__file__).parent.absolute()
             path = package_dir / cls.config_dir / cls.config_file
             return cls.file_settings(path, settings)
 
         @classmethod
         def overrides(cls, settings: BaseSettings) -> dict[str, Any]:
+            """Load overrides from config file.
+
+            Args:
+                settings: BaseSettings model.
+
+            Returns:
+                dict[str, Any]: Settings loaded from deployment-specific config file.  # noqa: E501
+
+            """
             Path.cwd() / cls.config_file
             return cls.file_settings(Path.cwd() / cls.config_file, settings)
 
@@ -95,4 +121,4 @@ class Settings(BaseSettings):
             return cls.overrides, cls.defaults, init_settings
 
 
-settings = Settings()
+settings = Settings.parse_obj({})
