@@ -19,6 +19,10 @@ class ServerConfig(BaseModel):
     port: int
 
 
+class SpackConfig(BaseModel):
+    command: str
+
+
 class ArtifactsConfig(BaseModel):
     """Artifacts config model."""
 
@@ -33,9 +37,9 @@ class ArtifactsConfig(BaseModel):
     class ORAS(BaseModel):
         """ORAS model."""
 
-        uri: AnyHttpUrl
         username: str
         token: str
+        uri: Optional[AnyHttpUrl]
 
     oras: Optional[list[ORAS]]
 
@@ -45,6 +49,7 @@ class Settings(BaseSettings):
 
     debug: bool = False
     server: ServerConfig
+    spack: SpackConfig
     artifacts: ArtifactsConfig
 
     class Config:

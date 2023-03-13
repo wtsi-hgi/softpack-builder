@@ -84,7 +84,7 @@ class Environment:
         Returns:
             None,
         """
-        self.shell_commands(f"spack {command}")
+        self.shell_commands(f"{settings.spack.command} {command}")
 
     def spack_env_command(self, command: str):
         """Run a Spack environment command.
