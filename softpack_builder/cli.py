@@ -5,28 +5,30 @@ LICENSE file in the root directory of this source tree.
 """
 
 import typer
+import uvicorn
 
-from .build_flow import BuildFlow
+from . import environment
+from .config import settings
 
-app = typer.Typer()
+cli = typer.Typer()
 
-
-@app.command()
-def status():
-    """Show service status."""
-    typer.echo("OK")
+cli.add_typer(environment.commands, name="environment")
 
 
-@app.command()
-def build(timeout: int = 30):
-    """Start a build."""
-    flow = BuildFlow()
-    flow.run(timeout)
+@cli.command()
+def service():
+    uvicorn.run(
+        "softpack_builder.app:app",
+        host=settings.server.host,
+        port=settings.server.port,
+        reload=False,
+        log_level="debug",
+    )
 
 
 def main():
     """Main entrypoint."""
-    app()
+    cli()
 
 
 if __name__ == "__main__":

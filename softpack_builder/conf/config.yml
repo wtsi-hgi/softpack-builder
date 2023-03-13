@@ -1,0 +1,13 @@
+server:
+  host: 0.0.0.0
+  port: 8000
+
+artifacts:
+  repo:
+    uri: https://github.com/user/project
+    token:
+
+  oras:
+    - uri: https://github.com/user/project
+      username:
+      token:

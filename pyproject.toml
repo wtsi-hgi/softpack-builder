@@ -56,6 +56,10 @@ prefect-dask = "^0.2.3"
 prefect-shell = "^0.1.5"
 ruamel-yaml = "^0.17.21"
 mkdocs-render-swagger-plugin = "^0.0.4"
+python-box = "^7.0.1"
+fastapi = "^0.94.0"
+pygit2 = "^1.11.1"
+pydantic = "^1.10.6"
 
 [tool.poetry.extras]
 test = [
