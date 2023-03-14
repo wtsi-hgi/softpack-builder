@@ -20,7 +20,10 @@ class ServerConfig(BaseModel):
 
 
 class SpackConfig(BaseModel):
+    """Spack config model."""
+
     command: str
+    manifest: dict
 
 
 class ArtifactsConfig(BaseModel):
@@ -93,16 +96,17 @@ class Settings(BaseSettings):
 
         @classmethod
         def overrides(cls, settings: BaseSettings) -> dict[str, Any]:
-            """Load overrides from config file.
+            """Load overrides from config file in the current directory.
 
             Args:
                 settings: BaseSettings model.
 
             Returns:
-                dict[str, Any]: Settings loaded from deployment-specific config file.  # noqa: E501
+                dict[str, Any]: Settings loaded from deployment-specific
+                config file.
 
             """
-            Path.cwd() / cls.config_file
+            Path.home() / ".softpack/builder" / cls.config_file
             return cls.file_settings(Path.cwd() / cls.config_file, settings)
 
         @classmethod

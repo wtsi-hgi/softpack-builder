@@ -16,7 +16,7 @@ cli.add_typer(environment.commands, name="environment")
 
 
 @cli.command()
-def service():
+def service() -> None:
     """Start the SoftPack Builder REST API service.
 
     Returns:
@@ -31,7 +31,7 @@ def service():
     )
 
 
-def main():
+def main() -> None:
     """Main entrypoint."""
     cli()
 

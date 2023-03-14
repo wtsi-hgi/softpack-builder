@@ -5,10 +5,10 @@ LICENSE file in the root directory of this source tree.
 """
 
 
-from typing import Any
+from typing import Any, Callable
 
 
-async def async_exec(func, *args) -> Any:
+async def async_exec(func: Callable, *args: str) -> Any:
     """Execute an exec function.
 
     Args:

@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlunsplit
 
 import requests
@@ -48,7 +49,7 @@ class Environment:
         self.spack_command(f"env create -d {self.path}")
 
     @staticmethod
-    def from_yaml(path: Path):
+    def from_yaml(path: Path) -> dict[str, Any]:
         """Load a YAML file.
 
         Args:
@@ -60,7 +61,7 @@ class Environment:
         with open(path) as file:
             return yaml.safe_load(file)
 
-    def shell_commands(self, *args) -> None:
+    def shell_commands(self, *args: str) -> None:
         """Execute shell commands with Prefect.
 
         Args:
@@ -75,18 +76,18 @@ class Environment:
             process = shell_commands.trigger()
             process.wait_for_completion()
 
-    def spack_command(self, command: str):
+    def spack_command(self, command: str) -> None:
         """Run a Spack command.
 
         Args:
             command: Spack command to run
 
         Returns:
-            None,
+            None.
         """
         self.shell_commands(f"{settings.spack.command} {command}")
 
-    def spack_env_command(self, command: str):
+    def spack_env_command(self, command: str) -> None:
         """Run a Spack environment command.
 
         Args:
@@ -97,7 +98,7 @@ class Environment:
         """
         self.spack_command(f"-e {self.path} {command}")
 
-    def create_manifest(self):
+    def create_manifest(self) -> None:
         """Create Spack manifest.
 
         Returns:
@@ -110,7 +111,7 @@ class Environment:
         self.logger.info(f"adding packages: {packages}")
         self.spack_env_command(f"add {packages}")
 
-    def build(self):
+    def build(self) -> None:
         """Build a Spack environment.
 
         Returns:
@@ -118,9 +119,8 @@ class Environment:
         """
         self.logger.info(f"building environment: name={self.model.name}")
         self.spack_env_command("install --fail-fast")
-        return "OK"
 
-    def epilogue(self):
+    def epilogue(self) -> None:
         """Run an epilogue task.
 
         Returns:
@@ -130,7 +130,7 @@ class Environment:
         parsed_response = Box(response.json())
         self.logger.info(f"random cat fact: {parsed_response.fact}")
 
-    def print_status(self, status) -> None:
+    def print_status(self, status: Any) -> None:
         """Print status to log.
 
         Args:
@@ -144,7 +144,7 @@ class Environment:
 
 
 @task
-def environment_instantiate(model) -> Environment:
+def environment_instantiate(model: Environment.Model) -> Environment:
     """Prefect task for instantiating an Environment object.
 
     Args:
@@ -158,7 +158,7 @@ def environment_instantiate(model) -> Environment:
 
 
 @task
-def environment_build(env) -> None:
+def environment_build(env: Environment) -> None:
     """Prefect task for building an environment.
 
     Args:
@@ -171,7 +171,7 @@ def environment_build(env) -> None:
 
 
 @task
-def environment_create_manifest(env) -> None:
+def environment_create_manifest(env: Environment) -> None:
     """Prefect task for creating an environment manifest.
 
     Args:
@@ -184,7 +184,7 @@ def environment_create_manifest(env) -> None:
 
 
 @task
-def epilogue(env) -> None:
+def epilogue(env: Environment) -> None:
     """Run epilogue task.
 
     Args:
@@ -197,7 +197,7 @@ def epilogue(env) -> None:
 
 
 @flow(task_runner=DaskTaskRunner())
-def environment_create_flow(model) -> None:
+def environment_create_flow(model: Environment.Model) -> None:
     """Prefect flow for creating an environment.
 
     Args:
@@ -206,7 +206,7 @@ def environment_create_flow(model) -> None:
     Returns:
         None.
     """
-    env = environment_instantiate(model)
+    env: Environment = environment_instantiate(model)
     environment_create_manifest(env)
     environment_build(env)
     epilogue(env)
@@ -218,7 +218,7 @@ router = APIRouter(prefix="/environments")
 @router.post("/create")
 def environment_create(
     model: Environment.Model, background_tasks: BackgroundTasks
-):
+) -> dict[str, Any]:
     """HTTP POST handler for /create route.
 
     Args:
@@ -236,7 +236,7 @@ commands = typer.Typer(help="Commands for managing SoftPack environments.")
 
 
 @commands.command()
-def create(filename: Path):
+def create(filename: Path) -> None:
     """Create an environment.
 
     Args:
