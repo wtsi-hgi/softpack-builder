@@ -11,6 +11,5 @@ artifacts:
     token:
 
   oras:
-    - uri: https://github.com/user/project
-      username:
+    - username:
       token:

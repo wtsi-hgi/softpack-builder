@@ -23,7 +23,7 @@ class SpackConfig(BaseModel):
     """Spack config model."""
 
     command: str
-    manifest: dict
+    manifest: Optional[dict]
 
 
 class ArtifactsConfig(BaseModel):
@@ -33,15 +33,15 @@ class ArtifactsConfig(BaseModel):
         """Repo model."""
 
         uri: AnyHttpUrl
-        token: str
+        token: Optional[str]
 
     repo: Repo
 
     class ORAS(BaseModel):
         """ORAS model."""
 
-        username: str
-        token: str
+        username: Optional[str]
+        token: Optional[str]
         uri: Optional[AnyHttpUrl]
 
     oras: Optional[list[ORAS]]
