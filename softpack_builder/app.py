@@ -6,7 +6,27 @@ LICENSE file in the root directory of this source tree.
 
 from fastapi import FastAPI
 
-from . import environment
+from . import __version__, environment
 
 app = FastAPI()
+
+
+class ServiceStatus(dict):
+    """Service status class."""
+
+    def __init__(self) -> None:
+        """Constructor."""
+        super().__init__(softpack_builder=dict(version=__version__))
+
+
+@app.get("/")
+def root() -> ServiceStatus:
+    """HTTP GET handler for / route.
+
+    Returns:
+        ServiceStatus: Service status object
+    """
+    return ServiceStatus()
+
+
 app.include_router(environment.router)

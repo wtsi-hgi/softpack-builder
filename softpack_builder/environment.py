@@ -206,7 +206,7 @@ def environment_create_flow(model: Environment.Model) -> None:
     Returns:
         None.
     """
-    env: Environment = environment_instantiate(model)
+    env: Environment = environment_instantiate(model)  # type: ignore
     environment_create_manifest(env)
     environment_build(env)
     epilogue(env)
@@ -228,7 +228,10 @@ def environment_create(
     Returns:
         None.
     """
-    background_tasks.add_task(async_exec, environment_create_flow, model)
+    background_tasks.add_task(
+        async_exec, environment_create_flow, model  # type: ignore
+    )
+
     return {"status": "OK", "message": "environment creation in progress"}
 
 
