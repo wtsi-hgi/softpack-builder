@@ -106,8 +106,8 @@ class Settings(BaseSettings):
                 config file.
 
             """
-            Path.home() / ".softpack/builder" / cls.config_file
-            return cls.file_settings(Path.cwd() / cls.config_file, settings)
+            path = Path.home() / ".softpack/builder" / cls.config_file
+            return cls.file_settings(path, settings)
 
         @classmethod
         def customise_sources(

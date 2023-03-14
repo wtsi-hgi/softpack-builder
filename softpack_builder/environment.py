@@ -228,7 +228,7 @@ def environment_create(
         None.
     """
 
-    def flow_wrapper(model: Environment.Model) -> None:
+    async def flow_wrapper(model: Environment.Model) -> None:
         return environment_create_flow(model)  # type: ignore
 
     background_tasks.add_task(flow_wrapper, model)
