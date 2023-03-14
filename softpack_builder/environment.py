@@ -20,7 +20,6 @@ from prefect_dask.task_runners import DaskTaskRunner
 from prefect_shell import ShellOperation
 
 from .config import settings
-from .utils import async_exec
 
 
 class Environment:
@@ -228,10 +227,11 @@ def environment_create(
     Returns:
         None.
     """
-    background_tasks.add_task(
-        async_exec, environment_create_flow, model  # type: ignore
-    )
 
+    def flow_wrapper(model: Environment.Model) -> None:
+        return environment_create_flow(model)  # type: ignore
+
+    background_tasks.add_task(flow_wrapper, model)
     return {"status": "OK", "message": "environment creation in progress"}
 
 
