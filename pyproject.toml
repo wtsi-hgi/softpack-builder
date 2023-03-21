@@ -26,31 +26,34 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"
 pip = "^23.0.1"
-typer = { version = "^0.7.0"}
-autoflake = { version = "^1.7.8", optional = true }
-black = { version = "^23.1.0", optional = true }
-bump2version = { version = "^1.0.1", optional = true }
-essential-generators = { version = "^1.0", optional = true }
-flake8 = { version = "^5.0.4", optional = true }
-flake8-docstrings = { version = "^1.7.0", optional = true }
-isort = { version = "^5.12.0", optional = true }
-mkdocs = { version = "^1.4.2", optional = true }
-mkdocs-autorefs = { version = "^0.4.1", optional = true }
-mkdocs-include-markdown-plugin = { version = "^3.9.1", optional = true }
-mkdocs-material = { version = "^9.1.0", optional = true }
-mkdocstrings = { version = "^0.20.0", optional = true }
-mkdocstrings-python = { version = "^0.8.3", optional = true }
-mkdocs-material-extensions = { version = "^1.1.1", optional = true }
-mkdocs-render-swagger-plugin = { version = "^0.0.4", optional = true }
-mypy = { version = "^v1.0.1", optional = true }
-mypy-extensions = { version = "^1.0.0", optional = true }
-pytest = { version = "^7.2.2", optional = true }
-pytest-cov = { version = "^4.0.0", optional = true }
-pre-commit = { version = "^3.1.1", optional = true }
-toml = { version = "^0.10.2", optional = true }
-tox = { version = "^4.4.6", optional = true }
-twine = { version = "^4.0.2", optional = true }
-virtualenv = { version = "^20.20.0", optional = true }
+typer = {version = "^0.7.0"}
+autoflake = {version = "^1.7.8", optional = true}
+black = {version = "^23.1.0", optional = true}
+bump2version = {version = "^1.0.1", optional = true}
+essential-generators = {version = "^1.0", optional = true}
+flake8 = {version = "^5.0.4", optional = true}
+flake8-docstrings = {version = "^1.7.0", optional = true}
+isort = {version = "^5.12.0", optional = true}
+mkdocs = {version = "^1.4.2", optional = true}
+mkdocs-autorefs = {version = "^0.4.1", optional = true}
+mkdocs-include-markdown-plugin = {version = "^3.9.1", optional = true}
+mkdocs-material = {version = "^9.1.0", optional = true}
+mkdocstrings = {version = "^0.20.0", optional = true}
+mkdocstrings-python = {version = "^0.8.3", optional = true}
+mkdocs-material-extensions = {version = "^1.1.1", optional = true}
+mkdocs-render-swagger-plugin = {version = "^0.0.4", optional = true}
+mypy = {version = "^v1.0.1", optional = true}
+mypy-extensions = {version = "^1.0.0", optional = true}
+pytest = {version = "^7.2.2", optional = true}
+pytest-asyncio = {version = "^0.21.0", optional = true}
+pytest-cases = {version = "^3.6.14", optional = true}
+pytest-cov = {version = "^4.0.0", optional = true}
+pytest-httpx = {version = "^0.21.3", optional = true}
+pre-commit = {version = "^3.1.1", optional = true}
+toml = {version = "^0.10.2", optional = true}
+tox = {version = "^4.4.6", optional = true}
+twine = {version = "^4.0.2", optional = true}
+virtualenv = {version = "^20.20.0", optional = true}
 archspec = "^0.2.0"
 bokeh = ">=2.4.3,<3.0"
 fastapi = "^0.94.0"
@@ -62,6 +65,8 @@ pydantic = "^1.10.6"
 pygit2 = "^1.11.1"
 python-box = "^7.0.1"
 ruamel-yaml = "^0.17.21"
+singleton-decorator = "^1.0.0"
+sqlalchemy = "1.4.45"
 
 [tool.poetry.extras]
 test = [
@@ -72,7 +77,10 @@ test = [
     "isort",
     "mypy",
     "pytest",
-    "pytest-cov"
+    "pytest-asyncio",
+    "pytest-cases",
+    "pytest-cov",
+    "pytest-httpx"
     ]
 
 dev = ["tox", "pre-commit", "virtualenv", "pip", "twine", "toml", "bump2version"]
@@ -89,7 +97,7 @@ doc = [
     ]
 
 [tool.poetry.scripts]
-softpack-builder = 'softpack_builder.cli:main'
+softpack-builder = 'softpack_builder.main:main'
 
 [tool.black]
 line-length = 79
@@ -128,6 +136,10 @@ disallow_untyped_calls = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning:starlette"
+]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

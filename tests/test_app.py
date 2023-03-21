@@ -4,45 +4,34 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import httpx
 
-import time
-from multiprocessing import Process
-from typing import Generator
-
-import pytest
-import requests
-
-from softpack_builder.app import ServiceStatus
-from softpack_builder.cli import service
-from softpack_builder.config import settings
+from softpack_builder.app import Application
 
 
-@pytest.fixture(scope="module")
-def api_server() -> Generator:
-    """Fixture for starting API server.
-
-    Returns:
-        None
-    """
-    startup_timeout = 5
-    proc = Process(target=service, daemon=True)
-    proc.start()
-    time.sleep(startup_timeout)
-    yield proc
-    proc.kill()
+def test_root(client) -> None:
+    response = client.get("/")
+    assert response.status_code == httpx.codes.OK
 
 
-def test_service_get_root(api_server: Generator) -> None:
-    """Test HTTP GET for / route.
+def test_openapi_docs(client) -> None:
+    response = client.get("/docs")
+    assert response.status_code == httpx.codes.OK
 
-    Args:
-        api_server: API server fixture.
 
-    Returns:
-        None.
-    """
-    response = requests.get(
-        f"http://{settings.server.host}:{settings.server.port}"
+def test_openapi_redoc(client) -> None:
+    response = client.get("/redoc")
+    assert response.status_code == httpx.codes.OK
+
+
+def test_register_module(capsys) -> None:
+    class Module:
+        pass
+
+    app = Application()
+    app.register_module(Module)
+    captured = capsys.readouterr()
+    assert (
+        captured.out
+        == f"type object '{Module.__name__}' has no attribute 'router'\n"  # noqa: E501, W503
     )
-    assert response.status_code == 200
-    assert response.json() == ServiceStatus()

@@ -128,6 +128,3 @@ class Settings(BaseSettings):
 
             """
             return cls.overrides, cls.defaults, init_settings
-
-
-settings = Settings.parse_obj({})

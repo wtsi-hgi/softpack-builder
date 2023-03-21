@@ -4,26 +4,40 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import dataclasses
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlunsplit
 
-import requests
-import typer
+import httpx
 import yaml
-from box import Box
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter
 from prefect import flow, get_run_logger, task
 from prefect_dask.task_runners import DaskTaskRunner
 from prefect_shell import ShellOperation
+from typer import Typer
 
-from .config import settings
+from .app import app
+from .deployments import Deployments
+
+
+def delay_task(timeout: int = 30) -> None:
+    """Test delay loop."""
+    logger = get_run_logger()
+    for i in range(timeout):
+        time.sleep(1)
+        logger.info(f"delay_task: {i}")
 
 
 class Environment:
-    """Encapsulation for a SoftPack environment."""
+    """Service module."""
+
+    name = "environment"
+    router = APIRouter(prefix=f"/{name}")
+    commands = Typer(help="Commands for managing environments.")
+    deployments: Deployments
 
     @dataclass
     class Model:
@@ -33,6 +47,28 @@ class Environment:
         description: str
         packages: list[str]
 
+        @classmethod
+        def from_yaml(cls, filename: Path) -> "Environment.Model":
+            """Load Model from a YAML file.
+
+            Args:
+                filename: A YAML file with a Model spec
+
+            Returns:
+                Model: A Model object created from YAML file
+            """
+            with open(filename) as file:
+                return Environment.Model(**yaml.safe_load(file))
+
+        def asdict(self) -> dict:
+            """Return the model as a dictionary.
+
+            Returns:
+                dict: Model as a dictionary
+
+            """
+            return dataclasses.asdict(self)
+
     def __init__(self, model: Model):
         """Constructor.
 
@@ -41,24 +77,38 @@ class Environment:
         """
         self.model = model
         self.logger = get_run_logger()
+
+    def stage(self) -> None:
+        """Stage the environment in a temporary directory.
+
+        Returns:
+            None
+        """
         self.path = Path(tempfile.mkdtemp(prefix=f"spack_{self.model.name}_"))
         self.logger.info(
-            f"creating environment: name={self.model.name}, path={self.path}"
+            f"staging environment: name={self.model.name}, path={self.path}"
         )
         self.spack_command(f"env create -d {self.path}")
 
-    @staticmethod
-    def from_yaml(path: Path) -> dict[str, Any]:
-        """Load a YAML file.
-
-        Args:
-            path: YAML filename
+    def create_manifest(self) -> None:
+        """Create Spack manifest.
 
         Returns:
-            Dictionary loaded from the YAML file
+            None.
         """
-        with open(path) as file:
-            return yaml.safe_load(file)
+        self.logger.info(f"creating manifest: name={self.model.name}")
+        packages = " ".join(self.model.packages)
+        self.logger.info(f"adding packages: {packages}")
+        self.spack_env_command(f"add {packages}")
+
+    def build(self) -> None:
+        """Build a Spack environment.
+
+        Returns:
+            None.
+        """
+        self.logger.info(f"building environment: name={self.model.name}")
+        self.spack_env_command("install --fail-fast")
 
     def shell_commands(self, *args: str) -> None:
         """Execute shell commands with Prefect.
@@ -84,7 +134,7 @@ class Environment:
         Returns:
             None.
         """
-        self.shell_commands(f"{settings.spack.command} {command}")
+        self.shell_commands(f"{app.settings.spack.command} {command}")
 
     def spack_env_command(self, command: str) -> None:
         """Run a Spack environment command.
@@ -97,165 +147,130 @@ class Environment:
         """
         self.spack_command(f"-e {self.path} {command}")
 
-    def create_manifest(self) -> None:
-        """Create Spack manifest.
-
-        Returns:
-            None.
-        """
-        self.logger.info(
-            f"creating spack.yaml manifest, name={self.model.name}"
-        )
-        packages = " ".join(self.model.packages)
-        self.logger.info(f"adding packages: {packages}")
-        self.spack_env_command(f"add {packages}")
-
-    def build(self) -> None:
-        """Build a Spack environment.
-
-        Returns:
-            None.
-        """
-        self.logger.info(f"building environment: name={self.model.name}")
-        self.spack_env_command("install --fail-fast")
-
-    def epilogue(self) -> None:
-        """Run an epilogue task.
-
-        Returns:
-            None.
-        """
-        response = requests.get("https://catfact.ninja/fact")
-        parsed_response = Box(response.json())
-        self.logger.info(f"random cat fact: {parsed_response.fact}")
-
-    def print_status(self, status: Any) -> None:
-        """Print status to log.
+    @classmethod
+    def register_deployments(cls, *flows: Any) -> None:
+        """Register flow deployments with the API.
 
         Args:
-            status: Status code to log
+            *flows: List of flows
+
+        Returns:
+            None
+        """
+        cls.deployments = Deployments.register(*flows)
+
+    @staticmethod
+    def url(path: str) -> str:
+        """Get absolute URL path.
+
+        Args:
+            path: Relative URL path under module prefix
+
+        Returns:
+            str: URL path
+        """
+        return str(Path(Environment.router.prefix) / path)
+
+    @staticmethod
+    @commands.command("create")
+    def create_environment_command(filename: Path) -> None:
+        """Create an environment.
+
+        Args:
+            filename: A YAML file of environment spec.
 
         Returns:
             None.
         """
-        self.logger.info(f"build status: {status}")
-        self.epilogue()
+        model = Environment.Model.from_yaml(filename)
+        response = httpx.post(
+            app.url(Environment.url("create")),
+            json=model.asdict(),
+        )
+        result = response.json()
+        result = {
+            "name": result["name"],
+            "created": result["created"],
+            "state": {"type": result["state"]["type"]},
+        }
+        app.echo(yaml.dump(result, sort_keys=False))
+
+    @staticmethod
+    @router.post("/create")
+    def create_environment_route(model: Model) -> dict:
+        """HTTP POST handler for /create route.
+
+        Args:
+            model: An Environment.Model object.
+
+        Returns:
+            dict: Status from deployment run.
+        """
+        return Environment.deployments.run(
+            create_environment, parameters={"model": model.asdict()}
+        )
+
+        # return Environment.deployments.run(
+        #     test_flow, parameters={"name": model.name}
+        # )
 
 
-@task
-def environment_instantiate(model: Environment.Model) -> Environment:
-    """Prefect task for instantiating an Environment object.
+@task()
+def stage_environment(env: Environment) -> None:
+    """Prefect task for staging an environment.
 
     Args:
-        model: An Environment.Model.
-
-    Returns:
-        Environment: A newly instantiated Environment object.
-
-    """
-    return Environment(model)
-
-
-@task
-def environment_build(env: Environment) -> None:
-    """Prefect task for building an environment.
-
-    Args:
-        env: An Environment object.
+        env: An Environment object
 
     Returns:
         None.
     """
-    env.build()
+    delay_task()
+    env.stage()
 
 
-@task
-def environment_create_manifest(env: Environment) -> None:
-    """Prefect task for creating an environment manifest.
+@task()
+def create_manifest(env: Environment) -> None:
+    """Prefect task for creating environment manifest.
 
     Args:
-        env: An Environment object.
+        env: An Environment object
 
     Returns:
         None.
     """
+    delay_task()
     env.create_manifest()
 
 
-@task
-def epilogue(env: Environment) -> None:
-    """Run epilogue task.
+@task()
+def build_image(env: Environment) -> None:
+    """Prefect task for building an environment.
 
     Args:
-        env: An Environment object.
+        env: An Environment object
 
     Returns:
         None.
     """
-    env.epilogue()
+    delay_task()
+    env.build()
 
 
-@flow(task_runner=DaskTaskRunner())
-def environment_create_flow(model: Environment.Model) -> None:
-    """Prefect flow for creating an environment.
-
-    Args:
-        model: An Environment.Model object.
-
-    Returns:
-        None.
-    """
-    env: Environment = environment_instantiate(model)  # type: ignore
-    environment_create_manifest(env)
-    environment_build(env)
-    epilogue(env)
-
-
-router = APIRouter(prefix="/environments")
-
-
-@router.post("/create")
-def environment_create(
-    model: Environment.Model, background_tasks: BackgroundTasks
-) -> dict[str, Any]:
-    """HTTP POST handler for /create route.
-
-    Args:
-        model: An Environment.Model object.
-        background_tasks: FastAPI background task scheduler.
-
-    Returns:
-        None.
-    """
-
-    async def flow_wrapper(model: Environment.Model) -> None:
-        return environment_create_flow(model)  # type: ignore
-
-    background_tasks.add_task(flow_wrapper, model)
-    return {"status": "OK", "message": "environment creation in progress"}
-
-
-commands = typer.Typer(help="Commands for managing SoftPack environments.")
-
-
-@commands.command()
-def create(filename: Path) -> None:
+@flow(name="Create environment", task_runner=DaskTaskRunner())
+def create_environment(model: Environment.Model) -> None:
     """Create an environment.
 
     Args:
-        filename: A YAML file of environment spec.
+        model: An Environment.Model instance.
 
     Returns:
         None.
     """
-    url = urlunsplit(
-        (
-            "http",
-            f"{settings.server.host}:{settings.server.port}",
-            "environments/create",
-            "",
-            "",
-        )
-    )
-    response = requests.post(url, json=Environment.from_yaml(filename))
-    typer.echo(response.text)
+    env = Environment(model)
+    stage_environment(env)
+    create_manifest(env)
+    build_image(env)
+
+
+Environment.register_deployments(create_environment)
