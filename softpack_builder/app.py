@@ -13,6 +13,8 @@ from fastapi import FastAPI
 from singleton_decorator import singleton
 from typer import Typer
 
+from softpack_builder import __version__
+
 from .config import Settings
 
 
@@ -93,8 +95,6 @@ def root() -> dict:
     Returns:
         dict: Application status
     """
-    from . import __version__
-
     return {
         "time": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f'),
         "softpack": {"builder": {"version": __version__}},

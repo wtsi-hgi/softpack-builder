@@ -7,7 +7,7 @@ LICENSE file in the root directory of this source tree.
 import pytest
 from prefect import flow
 
-from softpack_builder.deployments import Deployments
+from softpack_builder.deployments import DeploymentRegistry
 
 
 @flow(name="test flow 1")
@@ -27,13 +27,14 @@ def flows():
 
 @pytest.fixture
 def deployments(flows):
-    return Deployments.register(*flows)
+    deployments = DeploymentRegistry()
+    deployments.register(flows)
+    return deployments
 
 
 def test_deployments_build(flows, deployments) -> None:
-    for f, deployment_flow in zip(flows, deployments.keys()):
-        assert f == deployment_flow
-    for f, deployment in zip(flows, deployments.values()):
+    for f in flows:
+        deployment = deployments.find(f)
         assert f.name == deployment.flow_name
 
 

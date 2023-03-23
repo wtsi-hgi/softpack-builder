@@ -16,12 +16,12 @@ from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
 from softpack_builder.app import Application
-from softpack_builder.environment import Environment
-from softpack_builder.service import Service
+from softpack_builder.environment import EnvironmentAPI
+from softpack_builder.service import ServiceAPI
 
 app = Application()
-app.register_module(Service)
-app.register_module(Environment)
+app.register_module(ServiceAPI)
+app.register_module(EnvironmentAPI)
 
 
 @pytest.fixture

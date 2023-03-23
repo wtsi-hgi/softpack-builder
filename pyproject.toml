@@ -99,6 +99,9 @@ doc = [
 [tool.poetry.scripts]
 softpack-builder = 'softpack_builder.main:main'
 
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.11.0"
+
 [tool.black]
 line-length = 79
 skip-string-normalization = true

@@ -10,12 +10,11 @@ from prefect import Flow
 from prefect.deployments import Deployment, run_deployment
 
 
-class Deployments(dict):
+class DeploymentRegistry:
     """Wrapper for building and running deployments."""
 
-    @classmethod
-    def register(cls, *flows: Any) -> "Deployments":
-        """Build deployments from flows.
+    def register(self, flows: list[Any]) -> None:
+        """Build and register deployments from flows.
 
         Args:
             *flows: A list of flows
@@ -23,16 +22,25 @@ class Deployments(dict):
         Returns:
             dict: A dictionary of flows and their corresponding deployments.
         """
-        return cls(
-            {
-                flow: Deployment.build_from_flow(
-                    flow=flow,
-                    name=f"{flow.__name__}-deployment",
-                    apply=True,
-                )
-                for flow in list(flows)
-            }
-        )
+        self.deployments = {
+            flow: Deployment.build_from_flow(
+                flow=flow,
+                name=f"{flow.__name__}-deployment",
+                apply=True,
+            )
+            for flow in flows
+        }
+
+    def find(self, flow: Flow) -> Deployment:
+        """Find a registered deployment for a given flow.
+
+        Args:
+            flow: A Prefect flow object
+
+        Returns:
+            Deployment: A registered deployment.
+        """
+        return self.deployments[flow]  # type: ignore
 
     def run(
         self,
@@ -53,9 +61,10 @@ class Deployments(dict):
             Any: The return value of running the deployment.
 
         """
-        deployment = self[flow]
-        name = f"{deployment.flow_name}/{deployment.name}"
-        status = run_deployment(
-            name, parameters=parameters, timeout=timeout, **kwargs
+        deployment = self.find(flow)
+        return run_deployment(
+            f"{deployment.flow_name}/{deployment.name}",
+            parameters=parameters,
+            timeout=timeout,
+            **kwargs,
         )
-        return status

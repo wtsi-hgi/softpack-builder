@@ -11,7 +11,7 @@ from typer import Typer
 from .app import app
 
 
-class Service:
+class ServiceAPI:
     """Service module."""
 
     name = "service"

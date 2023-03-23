@@ -11,7 +11,8 @@ import httpx
 import yaml
 from box import Box
 
-from softpack_builder.environment import Environment
+from softpack_builder.app import app
+from softpack_builder.environment import Environment, EnvironmentAPI
 
 
 def pytest_generate_tests(metafunc):
@@ -23,11 +24,13 @@ def pytest_generate_tests(metafunc):
 
 def test_environment_create_api(client, spec) -> None:
     model = Environment.Model.from_yaml(spec)
-    response = client.post(Environment.url("create"), json=model.asdict())
+    response = client.post(
+        app.url(EnvironmentAPI.url("create")), json=model.dict()
+    )
     assert response.status_code == httpx.codes.OK
 
 
-def test_environment_create_command(service, cli, spec) -> None:
-    response = cli.invoke([Environment.name, "create", spec])
+def test_environment_create_command(service_thread, cli, spec) -> None:
+    response = cli.invoke([EnvironmentAPI.name, "create", spec])
     result = Box(yaml.safe_load(response.stdout))
     assert result.state.type == "SCHEDULED"
