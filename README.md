@@ -5,6 +5,8 @@
 [![python](https://img.shields.io/pypi/pyversions/softpack-builder.svg)](https://pypi.org/project/softpack-builder/)
 [![Build Status](https://github.com/wtsi-hgi/softpack-builder/actions/workflows/dev.yml/badge.svg)](https://github.com/wtsi-hgi/softpack-builder/actions/workflows/dev.yml)
 [![codecov](https://codecov.io/gh/wtsi-hgi/softpack-builder/branch/main/graphs/badge.svg)](https://codecov.io/github/wtsi-hgi/softpack-builder)
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/wtsi-hgi/softpack-builder.svg)](http://isitmaintained.com/project/wtsi-hgi/softpack-builder "Average time to resolve an issue")
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/wtsi-hgi/softpack-builder.svg)](http://isitmaintained.com/project/wtsi-hgi/softpack-builder "Percentage of issues still open")
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](https://www.contributor-covenant.org/version/2/1/code_of_conduct)
 

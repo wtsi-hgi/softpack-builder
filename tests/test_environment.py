@@ -5,49 +5,32 @@ LICENSE file in the root directory of this source tree.
 """
 
 
-import pytest
-from essential_generators import DocumentGenerator
-from prefect import flow
+from pathlib import Path
 
-from softpack_builder.environment import Environment, environment_instantiate
+import httpx
+import yaml
+from box import Box
+
+from softpack_builder.app import app
+from softpack_builder.environment import Environment, EnvironmentAPI
 
 
-@pytest.fixture
-def env_model() -> Environment.Model:
-    """Create a random environment model.
+def pytest_generate_tests(metafunc):
+    path = Path(__file__).parent / "data/specs"
+    params = {"spec": [str(file) for file in path.glob("*.yml")]}
+    for fixture, param in params.items():
+        metafunc.parametrize(fixture, param)
 
-    Returns:
-        Environment.Model: A randomly generated environment model.
-    """
-    generator = DocumentGenerator()
-    return Environment.Model(
-        name=generator.word(),
-        description=generator.sentence(),
-        packages=["zlib"],
+
+def test_environment_create_api(client, spec) -> None:
+    model = Environment.Model.from_yaml(spec)
+    response = client.post(
+        app.url(EnvironmentAPI.url("create")), json=model.dict()
     )
+    assert response.status_code == httpx.codes.OK
 
 
-@flow
-def environment_flow(model: Environment.Model) -> None:
-    """Runs an environment flow.
-
-    Args:
-        model: An environment model
-
-    Returns:
-        Environment: A newly instantiated environment object.
-    """
-    return environment_instantiate(model)
-
-
-def test_environment_flow(env_model: Environment.Model) -> None:
-    """Test an environment flow.
-
-    Args:
-        env_model: A randomly generated environment model.
-
-    Returns:
-        None.
-    """
-    env: Environment = environment_flow(env_model)  # type: ignore
-    assert env.model == env_model
+def test_environment_create_command(service_thread, cli, spec) -> None:
+    response = cli.invoke([EnvironmentAPI.name, "create", spec])
+    result = Box(yaml.safe_load(response.stdout))
+    assert result.state.type == "SCHEDULED"
