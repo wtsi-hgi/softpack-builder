@@ -7,14 +7,14 @@ LICENSE file in the root directory of this source tree.
 import sys
 from pathlib import Path
 
+import pytest
+
 from softpack_builder.main import main
 
 
 def test_main(capsys) -> None:
-    try:
+    with pytest.raises(SystemExit):
         main()
-    except SystemExit:
-        pass
     captured = capsys.readouterr()
     command = Path(sys.argv[0])
-    assert f"Usage: {command.name} [OPTIONS] COMMAND [ARGS]" in captured.err
+    assert f"{command.name} [OPTIONS] COMMAND [ARGS]" in captured.err
