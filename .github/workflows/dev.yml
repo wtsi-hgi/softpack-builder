@@ -40,7 +40,7 @@ jobs:
       - name: Install Spack
         uses: actions/checkout@v3
         with:
-          repo: spack/spack
+          repository: spack/spack
           ref: v0.19.1
           path: spack
 
