@@ -47,7 +47,7 @@ jobs:
       - name: Create config file
         env:
           CONFIG_PATH: ~/.softpack/builder
-          CONFIG_FILE: $CONFIG_PATH/config.yml
+          CONFIG_FILE: ${{ env.CONFIG_PATH}}/config.yml
           SPACK_COMMAND: ~/spack/bin/spack
         run: |
           mkdir -p $CONFIG_PATH
