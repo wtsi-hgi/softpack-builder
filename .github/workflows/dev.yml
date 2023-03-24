@@ -37,12 +37,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry tox tox-gh-actions
 
+      - name: Install Spack
+        uses: actions/checkout@v3
+        with:
+          repo: spack/spack
+          ref: v0.19.1
+          path: spack
+
+      - name: Create config file
+        run: |
+          cat <<EOF > ~/.softpack/builder/config.yml
+          spack:
+            command: ~/spack/bin/spack
+          EOF
+
       - name: test with tox
         run:
           tox
-
-      - name: list files
-        run: ls -l .
 
       - uses: codecov/codecov-action@v3
         with:
