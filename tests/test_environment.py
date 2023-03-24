@@ -12,7 +12,13 @@ import yaml
 from box import Box
 
 from softpack_builder.app import app
-from softpack_builder.environment import Environment, EnvironmentAPI
+from softpack_builder.environment import (
+    Environment,
+    EnvironmentAPI,
+    create_environment,
+)
+
+PREFECT_AGENT_TIMEOUT = 300  # max amount of time to run (in seconds)
 
 
 def pytest_generate_tests(metafunc):
@@ -28,9 +34,15 @@ def test_environment_create_api(client, spec) -> None:
         app.url(EnvironmentAPI.url("create")), json=model.dict()
     )
     assert response.status_code == httpx.codes.OK
+    # prefect_agent.join(PREFECT_AGENT_TIMEOUT)
 
 
 def test_environment_create_command(service_thread, cli, spec) -> None:
     response = cli.invoke([EnvironmentAPI.name, "create", spec])
     result = Box(yaml.safe_load(response.stdout))
     assert result.state.type == "SCHEDULED"
+
+
+def test_environment_create_flow(spec) -> None:
+    model = Environment.Model.from_yaml(spec)
+    create_environment(model.dict())

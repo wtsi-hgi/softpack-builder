@@ -73,3 +73,26 @@ def service(service_factory):
 @pytest.fixture
 def service_thread(service_factory):
     return service_factory(Thread)
+
+
+def prefect_agent_run():
+    from prefect.cli import app as prefect_cli
+
+    with pytest.raises(SystemExit):
+        prefect_cli(
+            [
+                "agent",
+                "start",
+                "--hide-welcome",
+                "--run-once",
+                "--work-queue",
+                "default",
+            ]
+        )
+
+
+@pytest.fixture
+def prefect_agent():
+    agent = Thread(target=prefect_agent_run, daemon=True)
+    agent.start()
+    yield agent
