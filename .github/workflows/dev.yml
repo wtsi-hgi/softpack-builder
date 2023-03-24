@@ -6,9 +6,9 @@ name: tests
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master, main ]
+    branches: [ main ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ main, develop ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -40,15 +40,19 @@ jobs:
       - name: Install Spack
         uses: actions/checkout@v3
         with:
-          repo: spack/spack
+          repository: spack/spack
           ref: v0.19.1
           path: spack
 
       - name: Create config file
+        env:
+          CONFIG_PATH: $HOME/.softpack/builder
+          CONFIG_FILE: config.yml
         run: |
-          cat <<EOF > ~/.softpack/builder/config.yml
+          mkdir -p ${{ env.CONFIG_PATH }}
+          cat <<EOF > ${{ env.CONFIG_PATH }}/$CONFIG_FILE
           spack:
-            command: ~/spack/bin/spack
+            command: $GITHUB_WORKSPACE/spack/bin/spack
           EOF
 
       - name: test with tox
