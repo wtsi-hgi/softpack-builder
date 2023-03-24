@@ -45,10 +45,15 @@ jobs:
           path: spack
 
       - name: Create config file
+        env:
+          CONFIG_PATH: ~/.softpack/builder
+          CONFIG_FILE: $CONFIG_PATH/config.yml
+          SPACK_COMMAND: ~/spack/bin/spack
         run: |
-          cat <<EOF > ~/.softpack/builder/config.yml
+          mkdir -p $CONFIG_PATH
+          cat <<EOF > $CONFIG_FILE
           spack:
-            command: ~/spack/bin/spack
+            command: $SPACK_COMMAND
           EOF
 
       - name: test with tox
