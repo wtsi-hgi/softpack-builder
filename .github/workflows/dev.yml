@@ -58,7 +58,7 @@ jobs:
           pwd
           ls -al .
           ls -al $GITHUB_WORKSPACE/spack/bin/spack
-          cat $CONFIG_PATH/$CONFIG_FILE
+          cat $HOME/$CONFIG_PATH/$CONFIG_FILE
 
       - name: test with tox
         run:
