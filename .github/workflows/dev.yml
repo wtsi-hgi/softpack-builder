@@ -48,13 +48,16 @@ jobs:
         env:
           CONFIG_PATH: ~/.softpack/builder
           CONFIG_FILE: config.yml
-          SPACK_COMMAND: ~/spack/bin/spack
+          SPACK_COMMAND: $GITHUB_WORKSPACE/spack/bin/spack
         run: |
           mkdir -p $CONFIG_PATH
           cat <<EOF > $CONFIG_PATH/$CONFIG_FILE
           spack:
             command: $SPACK_COMMAND
           EOF
+          pwd
+          ls -al .
+          cat $CONFIG_PATH/$CONFIG_FILE
 
       - name: test with tox
         run:
