@@ -8,13 +8,15 @@ import dataclasses
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, cast
 
 import httpx
+import prefect
 import yaml
 from box import Box
 from fastapi import APIRouter
-from prefect import flow, get_run_logger, task
+from prefect import Task, flow, get_run_logger
+from prefect.context import FlowRunContext
 from prefect_dask.task_runners import DaskTaskRunner
 from prefect_shell import ShellOperation
 from pydantic import BaseModel
@@ -34,6 +36,7 @@ class Environment:
         """SoftPack environment data model."""
 
         name: str
+        owner: str
         description: str
         packages: list[str]
 
@@ -58,6 +61,38 @@ class Environment:
             with open(filename) as file:
                 return Environment.Model(**yaml.safe_load(file))
 
+    class Manifest:
+        """Spack manifest abstraction class."""
+
+        def __init__(self, filename: Path) -> None:
+            """Constructor."""
+            self.filename = filename
+
+        def from_yaml(self, filename: Path) -> dict[str, Any]:
+            """Load manifest from a YAML file.
+
+            Args:
+                filename: Path to a manifest TAML file.
+
+            Returns:
+                dict: A dictionary of manifest
+            """
+            with open(filename) as file:
+                return yaml.safe_load(file)
+
+        def patch(self) -> None:
+            """Patch a manifest.
+
+            Returns:
+                None
+            """
+            manifest = self.from_yaml(self.filename)
+            manifest[
+                "spack"
+            ] |= Environment.settings.spack.manifest.config.to_dict()
+            with open(self.filename, "w") as file:
+                yaml.dump(manifest, file, sort_keys=False)
+
     @classmethod
     def from_model(cls, **kwargs: Any) -> "Environment":
         """Create an Environment model.
@@ -79,32 +114,62 @@ class Environment:
         """
         self.model = model
         self.logger = get_run_logger()
-        self.path = Path(tempfile.mkdtemp(prefix=f"spack_{self.model.name}_"))
+        self.name = f"{self.model.owner}_{self.model.name}"
+        self.path = Path(tempfile.mkdtemp(prefix=f"spack_{self.name}_"))
+        self.filenames = Box(
+            {
+                "manifest": self.path / self.settings.spack.manifest.name,
+                "singularity": {
+                    "spec": self.path / self.settings.singularity.spec,
+                    "image": self.path / self.settings.singularity.image,
+                },
+            }
+        )
 
-    def shell_command(self, command: str) -> None:
+    @staticmethod
+    def task(fn: Callable, *args: Any, **kwargs: Any) -> Task:
+        """Prefect task partial.
+
+        Args:
+            fn: Task function
+            *args: Positional arguments
+            **kwargs: Keyword arguments
+
+        Returns:
+            Function wrapped in a Prefect task.
+        """
+        return prefect.task(  # type: ignore
+            fn, task_run_name=f"{fn.__name__} [{{env.name}}]", *args, **kwargs
+        )
+
+    def shell_command(self, command: str, **kwargs: str) -> None:
         """Execute shell command with Prefect.
 
         Args:
             command: Shell command to execute
+            kwargs: Keyword arguments
 
         Returns:
             None.
         """
         self.logger.info(f"running shell command: {command}")
-        with ShellOperation(commands=[command]) as shell_commands:
+        with ShellOperation(commands=[command], **kwargs) as shell_commands:
             process = shell_commands.trigger()
             process.wait_for_completion()
 
-    def spack_command(self, command: str) -> None:
+    def spack_command(self, command: str, **kwargs: str) -> None:
         """Run a Spack command.
 
         Args:
             command: Spack command to run
+            kwargs: Keyword arguments
 
         Returns:
             None.
         """
-        self.shell_command(f"{self.settings.spack.command} {command}")
+        self.shell_command(
+            f"{self.settings.spack.command} {command}", **kwargs
+        )
 
     def spack_env_command(self, command: str) -> None:
         """Run a Spack environment command.
@@ -117,6 +182,20 @@ class Environment:
         """
         self.spack_command(f"-e {self.path} {command}")
 
+    def singularity_command(self, command: str, **kwargs: str) -> None:
+        """Run a singularity command.
+
+        Args:
+            command: Singularity command to run
+            kwargs: Keyword arguments
+
+        Returns:
+            None.
+        """
+        self.shell_command(
+            f"{self.settings.singularity.command} {command}", **kwargs
+        )
+
     def stage(self) -> "Environment":
         """Stage environment in a new directory.
 
@@ -124,7 +203,7 @@ class Environment:
             Environment: Return self
         """
         self.logger.info(
-            f"staging environment: name={self.model.name}, path={self.path}"
+            f"staging environment: name={self.name}, path={self.path}"
         )
         self.spack_command(f"env create -d {self.path}")
         return self
@@ -135,10 +214,27 @@ class Environment:
         Returns:
             None.
         """
-        self.logger.info(f"creating manifest: name={self.model.name}")
+        self.logger.info(f"creating manifest: name={self.name}")
         packages = " ".join(self.model.packages)
         self.logger.info(f"adding packages: {packages}")
         self.spack_env_command(f"add {packages}")
+        self.logger.info(f"patching manifest: name={self.model.name}")
+        if self.settings.spack.manifest.config:
+            manifest = Environment.Manifest(self.filenames.manifest)
+            manifest.patch()
+        return self
+
+    def create_container_definition(self) -> "Environment":
+        """Create Spack manifest.
+
+        Returns:
+            Environment: Return self.
+        """
+        self.logger.info(f"creating_container definition name={self.name}")
+        self.spack_command(
+            f"containerize > {self.filenames.singularity.spec}",
+            working_dir=str(self.path),
+        )
         return self
 
     def build(self) -> "Environment":
@@ -147,8 +243,17 @@ class Environment:
         Returns:
             None.
         """
-        self.logger.info(f"building environment: name={self.model.name}")
-        self.spack_env_command("install --fail-fast")
+        self.logger.info(f"building environment: name={self.name}")
+        self.singularity_command(
+            " ".join(
+                [
+                    "build",
+                    self.filenames.singularity.image,
+                    self.filenames.singularity.spec,
+                ]
+            ),
+            working_dir=str(self.path),
+        )
         return self
 
 
@@ -219,7 +324,7 @@ class EnvironmentAPI:
         )
 
 
-@task()
+@Environment.task
 def stage_environment(env: Environment) -> Environment:
     """Stage an environment.
 
@@ -232,7 +337,7 @@ def stage_environment(env: Environment) -> Environment:
     return env.stage()
 
 
-@task()
+@Environment.task
 def create_manifest(env: Environment) -> Environment:
     """Create an environment manifest.
 
@@ -245,7 +350,20 @@ def create_manifest(env: Environment) -> Environment:
     return env.create_manifest()
 
 
-@task()
+@Environment.task
+def create_container_definition(env: Environment) -> Environment:
+    """Create container definition.
+
+    Args:
+        env: Environment for creating the container definition.
+
+    Returns:
+        Environment: The environment.
+    """
+    return env.create_container_definition()
+
+
+@Environment.task
 def build_image(env: Environment) -> Environment:
     """Build the image for the given environment.
 
@@ -259,19 +377,22 @@ def build_image(env: Environment) -> Environment:
 
 
 @flow(name="Create environment", task_runner=DaskTaskRunner())
-def create_environment(model: dict) -> None:
+def create_environment(model: dict) -> dict:
     """Create an environment.
 
     Args:
         parameters: Model parameters.
 
     Returns:
-        None.
+        dict: Flow run context
     """
     env = Environment.from_model(**model)
-    env = stage_environment.submit(env)  # type: ignore
-    env = create_manifest.submit(env)  # type: ignore
+    env = cast(Environment, stage_environment.submit(env))
+    env = cast(Environment, create_manifest.submit(env))
+    env = cast(Environment, create_container_definition.submit(env))
     build_image.submit(env)
+    context = cast(FlowRunContext, prefect.context.get_run_context())
+    return context.flow_run.dict()
 
 
 EnvironmentAPI.deployments.register([create_environment])

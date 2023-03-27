@@ -1,9 +1,24 @@
+debug: false
+
 server:
   host: 0.0.0.0
   port: 7080
 
 spack:
   command: spack
+  manifest:
+    name: spack.yaml
+    config:
+      container:
+        images:
+          os: ubuntu:20.04
+          spack: 0.19.1
+        format: singularity
+
+singularity:
+  command: singularity
+  spec: singularity.def
+  image: singularity.sif
 
 artifacts:
   repo:

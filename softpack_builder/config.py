@@ -22,8 +22,22 @@ class ServerConfig(BaseModel):
 class SpackConfig(BaseModel):
     """Spack config model."""
 
+    class ManifestConfig(BaseModel):
+        """Manifest config model."""
+
+        name: str
+        config: dict
+
     command: str
-    manifest: Optional[dict]
+    manifest: ManifestConfig
+
+
+class SingularityConfig(BaseModel):
+    """Singularity config model."""
+
+    command: str
+    spec: str
+    image: str
 
 
 class ArtifactsConfig(BaseModel):
@@ -53,6 +67,7 @@ class Settings(BaseSettings):
     debug: bool = False
     server: ServerConfig
     spack: SpackConfig
+    singularity: SingularityConfig
     artifacts: ArtifactsConfig
 
     class Config:
