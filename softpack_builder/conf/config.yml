@@ -12,7 +12,7 @@ spack:
       container:
         images:
           os: ubuntu:20.04
-          spack: 0.19.1
+          spack: v0.19.1
         format: singularity
 
 singularity:

@@ -248,8 +248,9 @@ class Environment:
             " ".join(
                 [
                     "build",
-                    self.filenames.singularity.image,
-                    self.filenames.singularity.spec,
+                    "--fakeroot",
+                    str(self.filenames.singularity.image),
+                    str(self.filenames.singularity.spec),
                 ]
             ),
             working_dir=str(self.path),
