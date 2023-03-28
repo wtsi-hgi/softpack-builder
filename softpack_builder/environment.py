@@ -68,30 +68,16 @@ class Environment:
             """Constructor."""
             self.filename = filename
 
-        def from_yaml(self, filename: Path) -> dict[str, Any]:
-            """Load manifest from a YAML file.
-
-            Args:
-                filename: Path to a manifest TAML file.
-
-            Returns:
-                dict: A dictionary of manifest
-            """
-            with open(filename) as file:
-                return yaml.safe_load(file)
-
         def patch(self) -> None:
             """Patch a manifest.
 
             Returns:
                 None
             """
-            manifest = self.from_yaml(self.filename)
-            manifest[
-                "spack"
-            ] |= Environment.settings.spack.manifest.config.to_dict()
+            manifest = Box.from_yaml(filename=self.filename)
+            manifest.spack |= Environment.settings.spack.manifest.config
             with open(self.filename, "w") as file:
-                yaml.dump(manifest, file, sort_keys=False)
+                yaml.dump(manifest.to_dict(), file, sort_keys=False)
 
     @classmethod
     def from_model(cls, **kwargs: Any) -> "Environment":
@@ -200,7 +186,7 @@ class Environment:
         """Stage environment in a new directory.
 
         Returns:
-            Environment: Return self
+            Environment: A reference to self.
         """
         self.logger.info(
             f"staging environment: name={self.name}, path={self.path}"
@@ -212,25 +198,34 @@ class Environment:
         """Create Spack manifest.
 
         Returns:
-            None.
+             Environment: A reference to self.
         """
         self.logger.info(f"creating manifest: name={self.name}")
         packages = " ".join(self.model.packages)
         self.logger.info(f"adding packages: {packages}")
         self.spack_env_command(f"add {packages}")
         self.logger.info(f"patching manifest: name={self.model.name}")
-        if self.settings.spack.manifest.config:
-            manifest = Environment.Manifest(self.filenames.manifest)
-            manifest.patch()
+        manifest = Environment.Manifest(self.filenames.manifest)
+        manifest.patch()
         return self
 
-    def create_container_definition(self) -> "Environment":
-        """Create Spack manifest.
+    def concretize(self) -> "Environment":
+        """Concretize the environment.
 
         Returns:
-            Environment: Return self.
+            Environment: A reference to self.
         """
-        self.logger.info(f"creating_container definition name={self.name}")
+        self.logger.info(f"concretizing environment: name={self.name}")
+        self.spack_env_command("concretize")
+        return self
+
+    def containerize(self) -> "Environment":
+        """Containerize the environment.
+
+        Returns:
+            Environment: A reference to self.
+        """
+        self.logger.info(f"containerizing environment: name={self.name}")
         self.spack_command(
             f"containerize > {self.filenames.singularity.spec}",
             working_dir=str(self.path),
@@ -241,7 +236,7 @@ class Environment:
         """Build a Spack environment.
 
         Returns:
-            None.
+            Environment: A reference to self.
         """
         self.logger.info(f"building environment: name={self.name}")
         self.singularity_command(
@@ -275,7 +270,7 @@ class EnvironmentAPI:
             type: Any
 
         name: str
-        created: str
+        created: Any
         state: State
 
     @classmethod
@@ -352,21 +347,34 @@ def create_manifest(env: Environment) -> Environment:
 
 
 @Environment.task
-def create_container_definition(env: Environment) -> Environment:
-    """Create container definition.
+def concretize_environment(env: Environment) -> Environment:
+    """Concretize_an environment.
 
     Args:
-        env: Environment for creating the container definition.
+        env: Environment to concretize.
 
     Returns:
         Environment: The environment.
     """
-    return env.create_container_definition()
+    return env.concretize()
 
 
 @Environment.task
-def build_image(env: Environment) -> Environment:
-    """Build the image for the given environment.
+def containerize_environment(env: Environment) -> Environment:
+    """Containerize the environment.
+
+    Args:
+        env: Environment to containerize.
+
+    Returns:
+        Environment: The environment.
+    """
+    return env.containerize()
+
+
+@Environment.task
+def build_environment(env: Environment) -> Environment:
+    """Build the environment.
 
     Args:
         env: Environment to build.
@@ -387,11 +395,19 @@ def create_environment(model: dict) -> dict:
     Returns:
         dict: Flow run context
     """
+    logger = get_run_logger()
     env = Environment.from_model(**model)
-    env = cast(Environment, stage_environment.submit(env))
-    env = cast(Environment, create_manifest.submit(env))
-    env = cast(Environment, create_container_definition.submit(env))
-    build_image.submit(env)
+    tasks = [
+        stage_environment,
+        create_manifest,
+        concretize_environment,
+        containerize_environment,
+        build_environment,
+    ]
+    for task in tasks:
+        env = cast(Environment, task.submit(env))
+
+    logger.info("create_environment flow completed")
     context = cast(FlowRunContext, prefect.context.get_run_context())
     return context.flow_run.dict()
 

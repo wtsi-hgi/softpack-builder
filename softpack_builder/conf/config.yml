@@ -9,11 +9,19 @@ spack:
   manifest:
     name: spack.yaml
     config:
+      view: false
+      concretizer:
+        unify: when_possible
       container:
         images:
           os: ubuntu:20.04
           spack: v0.19.1
         format: singularity
+        strip: true
+        os_packages:
+          final:
+            - libgomp1
+            - libgfortran5
 
 singularity:
   command: singularity
