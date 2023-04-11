@@ -17,11 +17,22 @@ spack:
           os: ubuntu:20.04
           spack: v0.19.1
         format: singularity
+        template: container/singularity_base.def
         strip: true
         os_packages:
+          build:
+            - libfribidi-dev
+            - libharfbuzz-dev
+            - lsb-release
+            - libclang-dev
+            - libpq5
+            - psmisc
+            - sudo
           final:
-            - libgomp1
             - libgfortran5
+            - libgomp1
+            - libpq5
+            - sqlite3
 
 singularity:
   command: singularity

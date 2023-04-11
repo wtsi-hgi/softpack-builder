@@ -243,6 +243,7 @@ class Environment:
             " ".join(
                 [
                     "build",
+                    "--force",
                     "--fakeroot",
                     str(self.filenames.singularity.image),
                     str(self.filenames.singularity.spec),
