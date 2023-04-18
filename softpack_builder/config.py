@@ -19,6 +19,19 @@ class ServerConfig(BaseModel):
     port: int
 
 
+class LoggingConfig(BaseModel):
+    """Logging config model."""
+
+    class Filename(BaseModel):
+        """Filename template."""
+
+        template: str
+
+    path: Path
+    filename: Filename
+    formatters: dict[str, dict[str, str]]
+
+
 class SpackConfig(BaseModel):
     """Spack config model."""
 
@@ -28,7 +41,6 @@ class SpackConfig(BaseModel):
         name: str
         config: dict
 
-    command: str
     manifest: ManifestConfig
 
 
@@ -66,6 +78,7 @@ class Settings(BaseSettings):
 
     debug: bool = False
     server: ServerConfig
+    logging: LoggingConfig
     spack: SpackConfig
     singularity: SingularityConfig
     artifacts: ArtifactsConfig
@@ -111,7 +124,7 @@ class Settings(BaseSettings):
 
         @classmethod
         def overrides(cls, settings: BaseSettings) -> dict[str, Any]:
-            """Load overrides from config file in the current directory.
+            """Load overrides from config file in the home directory.
 
             Args:
                 settings: BaseSettings model.

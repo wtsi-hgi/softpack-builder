@@ -4,8 +4,20 @@ server:
   host: 0.0.0.0
   port: 7080
 
+logging:
+  path: ./var/log
+  filename:
+    template: flow-{id}.log
+
+  formatters:
+    prefect:
+      class: prefect.logging.formatters.PrefectFormatter
+      format: "%(asctime)s.%(msecs)03d | %(levelname)-7s | %(name)s - %(message)s"
+      flow_run_fmt: "%(asctime)s.%(msecs)03d | %(levelname)-7s | Flow run %(flow_run_name)r - %(message)s"
+      task_run_fmt: "%(asctime)s.%(msecs)03d | %(levelname)-7s | Task run %(task_run_name)r - %(message)s"
+      datefmt: "%H:%M:%S"
+
 spack:
-  command: spack
   manifest:
     name: spack.yaml
     config:
@@ -15,17 +27,19 @@ spack:
       container:
         images:
           os: ubuntu:20.04
-          spack: v0.19.1
+          spack: v0.19.2
         format: singularity
         template: container/singularity_base.def
         strip: true
         os_packages:
           build:
+            - libclang-dev
             - libfribidi-dev
             - libharfbuzz-dev
-            - lsb-release
-            - libclang-dev
+            - libhdf5-dev
             - libpq5
+            - libxt-dev
+            - lsb-release
             - psmisc
             - sudo
           final:

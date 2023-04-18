@@ -5,10 +5,13 @@ LICENSE file in the root directory of this source tree.
 """
 
 import dataclasses
+import importlib
+import logging
+import shutil
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import Any, Callable, Optional, cast
 
 import httpx
 import prefect
@@ -96,10 +99,17 @@ class Environment:
         """Constructor.
 
         Args:
-            model: An TestEnvironment.Model
+            model: An Environment.Model
         """
         self.model = model
-        self.logger = get_run_logger()
+        context: FlowRunContext = cast(
+            FlowRunContext, prefect.context.FlowRunContext.get()
+        )
+        self.flow_run_id = context.flow_run.id
+        self.flow_logger = self.init_logger()
+        self.task_logger: Optional[logging.Logger] = None
+        self.spack = shutil.which("spack")
+
         self.name = f"{self.model.owner}_{self.model.name}"
         self.path = Path(tempfile.mkdtemp(prefix=f"spack_{self.name}_"))
         self.filenames = Box(
@@ -111,6 +121,49 @@ class Environment:
                 },
             }
         )
+
+    @property
+    def logger(self) -> logging.Logger:
+        """Get context-specific logger.
+
+        Returns:
+            Logger: A python Logger object.
+        """
+        if prefect.context.TaskRunContext.get():
+            if not self.task_logger:
+                self.task_logger = self.init_logger()
+            return self.task_logger
+        elif prefect.context.FlowRunContext.get():
+            return self.flow_logger
+        else:
+            raise TypeError(
+                "Called from unexpected context."
+                "Logging is only available in flow and task contexts."
+            )
+
+    def init_logger(self) -> logging.Logger:
+        """Initialize a logger.
+
+        Returns:
+            Logger: A python Logger object.
+        """
+        path = self.settings.logging.path.parent
+        path.mkdir(parents=True, exist_ok=True)
+        filename = path / self.settings.logging.filename.template.format(
+            id=self.flow_run_id
+        )
+        handler = logging.FileHandler(filename=str(filename))
+        args = self.settings.logging.formatters.prefect.to_dict()
+        formatter_class = args.pop("class")
+        module, _, cls = formatter_class.rpartition('.')
+        formatter = getattr(importlib.import_module(module), cls)(**args)
+        handler.setFormatter(formatter)
+        logger = get_run_logger()
+        if isinstance(logger, logging.LoggerAdapter):
+            logger = logger.logger
+        logger = cast(logging.Logger, logger)
+        logger.addHandler(handler)
+        return logger
 
     @staticmethod
     def task(fn: Callable, *args: Any, **kwargs: Any) -> Task:
@@ -153,9 +206,7 @@ class Environment:
         Returns:
             None.
         """
-        self.shell_command(
-            f"{self.settings.spack.command} {command}", **kwargs
-        )
+        self.shell_command(f"{self.spack} {command}", **kwargs)
 
     def spack_env_command(self, command: str) -> None:
         """Run a Spack environment command.
@@ -270,6 +321,7 @@ class EnvironmentAPI:
 
             type: Any
 
+        id: str
         name: str
         created: Any
         state: State
@@ -396,12 +448,12 @@ def create_environment(model: dict) -> dict:
     Returns:
         dict: Flow run context
     """
-    logger = get_run_logger()
     env = Environment.from_model(**model)
+    logger = env.logger
     tasks = [
         stage_environment,
         create_manifest,
-        concretize_environment,
+        # concretize_environment,
         containerize_environment,
         build_environment,
     ]
