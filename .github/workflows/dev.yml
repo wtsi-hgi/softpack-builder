@@ -49,16 +49,15 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: spack/spack
-          ref: 6aa4c29119
+          ref: 0707ffd4e466402bf19dff1add59eaf2b6d9154e
           path: spack
 
       - name: Update PATH
         run: |
           echo "$GITHUB_WORKSPACE/spack/bin" >> $GITHUB_PATH
 
-      - name: test with tox
-        run:
-          tox
+      - name: Run tests
+        run: poetry run tox
 
       - name: Run code coverage
         uses: codecov/codecov-action@v3
