@@ -5,9 +5,7 @@ server:
   port: 7080
 
 logging:
-  path: ./var/log
-  filename:
-    template: flow-{id}.log
+  filename: prefect.log
 
   formatters:
     prefect:
@@ -18,9 +16,17 @@ logging:
       datefmt: "%H:%M:%S"
 
 spack:
+  environment:
+    path: /opt/softpack/environments
   manifest:
     name: spack.yaml
-    config:
+    spack:
+      repos:
+        - /opt/spack-repo
+      config:
+        source_cache: /opt/spack-cache
+        url_fetch_method: curl
+        connect_timeout: 600
       view: false
       concretizer:
         unify: when_possible
@@ -29,7 +35,7 @@ spack:
           os: ubuntu:20.04
           spack: v0.19.2
         format: singularity
-        template: container/singularity_base.def
+        template: container/singularity_{stage}.def
         strip: true
         os_packages:
           build:
@@ -50,7 +56,7 @@ spack:
 
 singularity:
   command: singularity
-  spec: singularity.def
+  spec: singularity_{stage}.def
   image: singularity.sif
 
 artifacts:

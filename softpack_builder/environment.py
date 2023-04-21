@@ -5,12 +5,15 @@ LICENSE file in the root directory of this source tree.
 """
 
 import dataclasses
+import enum
 import importlib
 import logging
 import shutil
-import tempfile
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
+
+# from typing import Type
 from typing import Any, Callable, Optional, cast
 
 import httpx
@@ -27,6 +30,107 @@ from typer import Typer
 
 from .app import app
 from .deployments import DeploymentRegistry
+
+
+class ImageSpec(ABC):
+    """Abstract class for defining container image specs."""
+
+    settings = Box(app.settings.dict())
+
+    class Stage(enum.Enum):
+        """Image spec type."""
+
+        build = enum.auto()
+        final = enum.auto()
+
+    def __init__(self, path: Path, packages: list[str], stage: Stage):
+        """Constructor.
+
+        Args:
+            path: Environment path
+            packages: List of packages in the environment for caching
+            stage: Build stage
+        """
+        self.image = str(path / self.settings.singularity.image)
+        self.filename = str(
+            path / self.settings.singularity.spec.format(stage=stage.name)
+        )
+        self.packages = packages
+        self.stage = stage
+
+    def patch(self) -> None:
+        """Patch the image spec.
+
+        Returns:
+            None
+        """
+
+    @abstractmethod
+    def args(self) -> list[str]:
+        """Additional arguments passed to image builder.
+
+        Returns:
+            list[str]: List of arguments
+        """
+
+
+class BuildSpec(ImageSpec):
+    """Build spec."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Constructor.
+
+        Args:
+            **kwargs: Keyword arguments
+        """
+        super().__init__(stage=self.Stage.build, **kwargs)
+
+    def patch(self) -> None:
+        """Patch the image spec.
+
+        Returns:
+            None
+        """
+        with open(self.filename, "a") as file:
+            commands = map(
+                lambda package: f"  spack -e . buildcache create"
+                f" -d /opt/spack-cache"
+                f" {package}\n",
+                self.packages,
+            )
+            file.writelines(commands)
+
+    def args(self) -> list[str]:
+        """Additional arguments passed to image builder.
+
+        Returns:
+            list[str]: List of arguments
+        """
+        return [
+            "--bind /opt/softpack,/opt/spack-repo,/opt/spack-cache",
+            "--sandbox build/",
+            self.filename,
+        ]
+
+
+class FinalSpec(ImageSpec):
+    """Final spec."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Constructor.
+
+        Args:
+            **kwargs: Keyword arguments
+        """
+        super().__init__(stage=self.Stage.final, **kwargs)
+
+    def args(self) -> list[str]:
+        """Additional arguments passed to image builder.
+
+        Returns:
+            list[str]: List of arguments
+        """
+        return [self.image, self.filename]
 
 
 class Environment:
@@ -71,14 +175,21 @@ class Environment:
             """Constructor."""
             self.filename = filename
 
-        def patch(self) -> None:
+        def patch(self, spec: ImageSpec) -> None:
             """Patch a manifest.
+
+            Args:
+                spec: Image build spec.
 
             Returns:
                 None
             """
             manifest = Box.from_yaml(filename=self.filename)
-            manifest.spack |= Environment.settings.spack.manifest.config
+            manifest.spack |= Environment.settings.spack.manifest.spack
+            template = manifest.spack.container.template.format(
+                stage=spec.stage.name
+            )
+            manifest.spack.container.template = template
             with open(self.filename, "w") as file:
                 yaml.dump(manifest.to_dict(), file, sort_keys=False)
 
@@ -106,21 +217,15 @@ class Environment:
             FlowRunContext, prefect.context.FlowRunContext.get()
         )
         self.flow_run_id = context.flow_run.id
+        self.path = (
+            self.settings.spack.environment.path / f"{self.flow_run_id}"
+        )
+        self.path.mkdir(parents=True)
+
         self.flow_logger = self.init_logger()
         self.task_logger: Optional[logging.Logger] = None
         self.spack = shutil.which("spack")
-
         self.name = f"{self.model.owner}_{self.model.name}"
-        self.path = Path(tempfile.mkdtemp(prefix=f"spack_{self.name}_"))
-        self.filenames = Box(
-            {
-                "manifest": self.path / self.settings.spack.manifest.name,
-                "singularity": {
-                    "spec": self.path / self.settings.singularity.spec,
-                    "image": self.path / self.settings.singularity.image,
-                },
-            }
-        )
 
     @property
     def logger(self) -> logging.Logger:
@@ -147,11 +252,7 @@ class Environment:
         Returns:
             Logger: A python Logger object.
         """
-        path = self.settings.logging.path.parent
-        path.mkdir(parents=True, exist_ok=True)
-        filename = path / self.settings.logging.filename.template.format(
-            id=self.flow_run_id
-        )
+        filename = self.path / self.settings.logging.filename
         handler = logging.FileHandler(filename=str(filename))
         args = self.settings.logging.formatters.prefect.to_dict()
         formatter_class = args.pop("class")
@@ -166,19 +267,18 @@ class Environment:
         return logger
 
     @staticmethod
-    def task(fn: Callable, *args: Any, **kwargs: Any) -> Task:
+    def task(fn: Callable, **kwargs: Any) -> Task:
         """Prefect task partial.
 
         Args:
             fn: Task function
-            *args: Positional arguments
             **kwargs: Keyword arguments
 
         Returns:
             Function wrapped in a Prefect task.
         """
         return prefect.task(  # type: ignore
-            fn, task_run_name=f"{fn.__name__} [{{env.name}}]", *args, **kwargs
+            fn, task_run_name=f"{fn.__name__} [{{env.name}}]", **kwargs
         )
 
     def shell_command(self, command: str, **kwargs: str) -> None:
@@ -206,7 +306,9 @@ class Environment:
         Returns:
             None.
         """
-        self.shell_command(f"{self.spack} {command}", **kwargs)
+        self.shell_command(
+            f"{self.spack} {command}", working_dir=str(self.path), **kwargs
+        )
 
     def spack_env_command(self, command: str) -> None:
         """Run a Spack environment command.
@@ -230,7 +332,9 @@ class Environment:
             None.
         """
         self.shell_command(
-            f"{self.settings.singularity.command} {command}", **kwargs
+            f"{self.settings.singularity.command} {command}",
+            working_dir=str(self.path),
+            **kwargs,
         )
 
     def stage(self) -> "Environment":
@@ -255,52 +359,53 @@ class Environment:
         packages = " ".join(self.model.packages)
         self.logger.info(f"adding packages: {packages}")
         self.spack_env_command(f"add {packages}")
-        self.logger.info(f"patching manifest: name={self.model.name}")
-        manifest = Environment.Manifest(self.filenames.manifest)
-        manifest.patch()
         return self
 
-    def concretize(self) -> "Environment":
-        """Concretize the environment.
+    def patch_manifest(self, spec: ImageSpec) -> None:
+        """Patch environment manifest for a build stage.
+
+        Args:
+            stage: Container build stage.
 
         Returns:
-            Environment: A reference to self.
+            None
         """
-        self.logger.info(f"concretizing environment: name={self.name}")
-        self.spack_env_command("concretize")
-        return self
+        self.logger.info(
+            f"patching manifest: name={self.model.name}, stage={spec.stage}"
+        )
+        manifest = Environment.Manifest(
+            self.path / self.settings.spack.manifest.name
+        )
+        manifest.patch(spec)
 
-    def containerize(self) -> "Environment":
+    def containerize(self, spec: ImageSpec) -> None:
         """Containerize the environment.
 
-        Returns:
-            Environment: A reference to self.
-        """
-        self.logger.info(f"containerizing environment: name={self.name}")
-        self.spack_command(
-            f"containerize > {self.filenames.singularity.spec}",
-            working_dir=str(self.path),
-        )
-        return self
+        Args:
+            spec: Container image spec.
 
-    def build(self) -> "Environment":
+        Returns:
+            None
+        """
+        self.patch_manifest(spec)
+        self.logger.info(f"containerizing environment: name={self.name}")
+        self.spack_command(f"containerize > {spec.filename}")
+        spec.patch()
+
+    def build(self, spec_type: type) -> "Environment":
         """Build a Spack environment.
 
+        Args:
+            spec: Container image spec.
+
         Returns:
             Environment: A reference to self.
         """
+        spec = spec_type(path=self.path, packages=self.model.packages)
+        self.containerize(spec)
         self.logger.info(f"building environment: name={self.name}")
         self.singularity_command(
-            " ".join(
-                [
-                    "build",
-                    "--force",
-                    "--fakeroot",
-                    str(self.filenames.singularity.image),
-                    str(self.filenames.singularity.spec),
-                ]
-            ),
-            working_dir=str(self.path),
+            " ".join(["build", "--force", "--fakeroot"] + spec.args())
         )
         return self
 
@@ -359,7 +464,7 @@ class EnvironmentAPI:
 
     @staticmethod
     @router.post("/create")
-    def create_environment_route(model: dict) -> dict:
+    def create_environment_route(model: Box) -> dict:
         """HTTP POST handler for /create route.
 
         Args:
@@ -400,65 +505,35 @@ def create_manifest(env: Environment) -> Environment:
 
 
 @Environment.task
-def concretize_environment(env: Environment) -> Environment:
-    """Concretize_an environment.
-
-    Args:
-        env: Environment to concretize.
-
-    Returns:
-        Environment: The environment.
-    """
-    return env.concretize()
-
-
-@Environment.task
-def containerize_environment(env: Environment) -> Environment:
-    """Containerize the environment.
-
-    Args:
-        env: Environment to containerize.
-
-    Returns:
-        Environment: The environment.
-    """
-    return env.containerize()
-
-
-@Environment.task
-def build_environment(env: Environment) -> Environment:
+def build_environment(env: Environment, spec_type: type) -> Environment:
     """Build the environment.
 
     Args:
         env: Environment to build.
+        spec: Container image spec.
 
     Returns:
         Environment: The newly built environment.
     """
-    return env.build()
+    return env.build(spec_type)
 
 
-@flow(name="Create environment", task_runner=DaskTaskRunner())
-def create_environment(model: dict) -> dict:
+@flow(name="create_environment", task_runner=DaskTaskRunner())
+def create_environment(model: Box) -> dict:
     """Create an environment.
 
     Args:
-        parameters: Model parameters.
+        model: Model parameters.
 
     Returns:
         dict: Flow run context
     """
     env = Environment.from_model(**model)
     logger = env.logger
-    tasks = [
-        stage_environment,
-        create_manifest,
-        # concretize_environment,
-        containerize_environment,
-        build_environment,
-    ]
-    for task in tasks:
-        env = cast(Environment, task.submit(env))
+    env = cast(Environment, stage_environment.submit(env))
+    env = cast(Environment, create_manifest.submit(env))
+    env = cast(Environment, build_environment.submit(env, BuildSpec))
+    build_environment.submit(env, FinalSpec)
 
     logger.info("create_environment flow completed")
     context = cast(FlowRunContext, prefect.context.get_run_context())

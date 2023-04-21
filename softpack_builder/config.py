@@ -22,25 +22,25 @@ class ServerConfig(BaseModel):
 class LoggingConfig(BaseModel):
     """Logging config model."""
 
-    class Filename(BaseModel):
-        """Filename template."""
-
-        template: str
-
-    path: Path
-    filename: Filename
+    filename: Path
     formatters: dict[str, dict[str, str]]
 
 
 class SpackConfig(BaseModel):
     """Spack config model."""
 
+    class EnvironmentConfig(BaseModel):
+        """Environment config model."""
+
+        path: Path
+
     class ManifestConfig(BaseModel):
         """Manifest config model."""
 
         name: str
-        config: dict
+        spack: dict
 
+    environment: EnvironmentConfig
     manifest: ManifestConfig
 
 
