@@ -59,13 +59,23 @@ jobs:
           ref: main
           path: spack-templates
 
-      - name: show temporary files
+      - name: Create Spack config
+        env:
+          CONFIG_PATH: $HOME/.spack
+          CONFIG_FILE: config.yaml
         run: |
-          echo PWD = $PWD
-          ls -al $PWD
-          echo GITHUB_WORKSPACE = $GITHUB_WORKSPACE
-          ls -al $GITHUB_WORKSPACE
-          echo "spack-templates"
+          mkdir -p ${{ env.CONFIG_PATH }}
+          cat <<EOF > ${{ env.CONFIG_PATH }}/$CONFIG_FILE
+          config:
+            template_dirs:
+              - $GITHUB_WORKSPACE/spack-templates
+          EOF
+
+      - name: Show Spack config
+        run: |
+          echo "$HOME/.spack/config.yaml"
+          cat $HOME/.spack/config.yaml
+          echo "$GITHUB_WORKSPACE/spack-templates"
           ls -al $GITHUB_WORKSPACE/spack-templates
 
       - name: Update PATH

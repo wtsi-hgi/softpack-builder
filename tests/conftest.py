@@ -16,30 +16,13 @@ import requests
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
-from softpack_builder.app import Application
-from softpack_builder.environment import Environment, EnvironmentAPI
-from softpack_builder.service import ServiceAPI
-
-app = Application()
-app.register_module(ServiceAPI)
-app.register_module(EnvironmentAPI)
+from softpack_builder.app import app
 
 
 @pytest.fixture(autouse=True)
-def setup(monkeypatch, tmpdir):
+def patch_settings(monkeypatch, tmpdir):
     monkeypatch.setitem(
-        app.settings.spack.environments.__dict__, "path", tmpdir
-    )
-    monkeypatch.setitem(
-        Environment.settings.spack.environments.__dict__, "path", Path(tmpdir)
-    )
-    monkeypatch.setitem(
-        Environment.settings.spack.manifest.spack.config.__dict__,
-        "template_dirs",
-        Environment.settings.spack.manifest.spack.config.template_dirs
-        + [  # noqa: W503
-            str(Path(__file__).parent.parent.absolute() / "spack-templates")
-        ],
+        app.settings.spack.environments.__dict__, "path", Path(tmpdir)
     )
     yield app.settings
 

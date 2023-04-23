@@ -136,8 +136,6 @@ class FinalSpec(ImageSpec):
 class Environment:
     """Encapsulation for a SoftPack environment."""
 
-    settings = Box(app.settings.dict())
-
     @dataclass
     class Model:
         """SoftPack environment data model."""
@@ -175,7 +173,7 @@ class Environment:
             """Constructor."""
             self.filename = filename
 
-        def patch(self, spec: ImageSpec) -> None:
+        def patch(self, spec: ImageSpec, settings: Box) -> None:
             """Patch a manifest.
 
             Args:
@@ -185,7 +183,7 @@ class Environment:
                 None
             """
             manifest = Box.from_yaml(filename=self.filename)
-            manifest.spack |= Environment.settings.spack.manifest.spack
+            manifest.spack |= settings.spack.manifest.spack
             template = manifest.spack.container.template.format(
                 stage=spec.stage.name
             )
@@ -213,6 +211,7 @@ class Environment:
             model: An Environment.Model
         """
         self.model = model
+        self.settings = Box(app.settings.dict())
         context: FlowRunContext = cast(
             FlowRunContext, prefect.context.FlowRunContext.get()
         )
@@ -374,7 +373,7 @@ class Environment:
         manifest = Environment.Manifest(
             self.path / self.settings.spack.manifest.name
         )
-        manifest.patch(spec)
+        manifest.patch(spec, self.settings)
 
     def containerize(self, spec: ImageSpec) -> None:
         """Containerize the environment.
