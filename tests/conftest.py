@@ -28,15 +28,12 @@ app.register_module(EnvironmentAPI)
 
 @pytest.fixture
 def settings(monkeypatch):
-    with tempfile.TemporaryDirectory() as temp:
-        path = Path(temp)
-        prev = Environment.settings.spack.environments.path
-        Environment.settings.spack.environments.path = path
-        monkeypatch.setitem(
-            app.settings.spack.environments.__dict__, "path", str(path)
-        )
-        yield app.settings
-        Environment.settings.spack.environments.path = prev
+    temp = tempfile.mkdtemp("softpack-builder-")
+    monkeypatch.setitem(app.settings.spack.environments.__dict__, "path", temp)
+    monkeypatch.setitem(
+        Environment.settings.spack.environments.__dict__, "path", Path(temp)
+    )
+    yield app.settings
 
 
 @pytest.fixture
