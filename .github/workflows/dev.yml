@@ -59,6 +59,15 @@ jobs:
           ref: main
           path: spack-templates
 
+      - name: show temporary files
+        run: |
+          echo PWD = $PWD
+          ls -al $PWD
+          echo GITHUB_WORKSPACE = $GITHUB_WORKSPACE
+          ls -al $GITHUB_WORKSPACE
+          echo "spack-templates"
+          ls -al $GITHUB_WORKSPACE/spack-templates
+
       - name: Update PATH
         run: |
           echo "$GITHUB_WORKSPACE/spack/bin" >> $GITHUB_PATH
