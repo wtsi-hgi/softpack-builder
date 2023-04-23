@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # from typing import Type
-from typing import Any, Callable, Optional, cast
+from typing import Any, Callable, Union, cast
 
 import httpx
 import prefect
@@ -94,8 +94,8 @@ class BuildSpec(ImageSpec):
         with open(self.filename, "a") as file:
             commands = map(
                 lambda package: f"  spack -e . buildcache create"
-                f" -d /opt/spack-cache"
-                f" {package}\n",
+                f" --directory /opt/spack-cache"
+                f" --allow-root --force {package}\n",
                 self.packages,
             )
             file.writelines(commands)
@@ -107,7 +107,7 @@ class BuildSpec(ImageSpec):
             list[str]: List of arguments
         """
         return [
-            "--bind /opt/softpack,/opt/spack-repo,/opt/spack-cache",
+            "--bind /opt/softpack,/opt/spack-cache",
             "--sandbox build/",
             self.filename,
         ]
@@ -218,17 +218,17 @@ class Environment:
         )
         self.flow_run_id = context.flow_run.id
         self.path = (
-            self.settings.spack.environment.path / f"{self.flow_run_id}"
+            self.settings.spack.environments.path / f"{self.flow_run_id}"
         )
         self.path.mkdir(parents=True)
 
-        self.flow_logger = self.init_logger()
-        self.task_logger: Optional[logging.Logger] = None
+        self.flow_logger: logging.LoggerAdapter = self.init_logger()
+        self.task_logger: Union[logging.LoggerAdapter, None] = None
         self.spack = shutil.which("spack")
         self.name = f"{self.model.owner}_{self.model.name}"
 
     @property
-    def logger(self) -> logging.Logger:
+    def logger(self) -> logging.LoggerAdapter:
         """Get context-specific logger.
 
         Returns:
@@ -246,7 +246,7 @@ class Environment:
                 "Logging is only available in flow and task contexts."
             )
 
-    def init_logger(self) -> logging.Logger:
+    def init_logger(self) -> logging.LoggerAdapter:
         """Initialize a logger.
 
         Returns:
@@ -261,10 +261,8 @@ class Environment:
         handler.setFormatter(formatter)
         logger = get_run_logger()
         if isinstance(logger, logging.LoggerAdapter):
-            logger = logger.logger
-        logger = cast(logging.Logger, logger)
-        logger.addHandler(handler)
-        return logger
+            logger.logger.addHandler(handler)
+        return cast(logging.LoggerAdapter, logger)
 
     @staticmethod
     def task(fn: Callable, **kwargs: Any) -> Task:

@@ -5,8 +5,10 @@ LICENSE file in the root directory of this source tree.
 """
 
 
+import tempfile
 import time
 from multiprocessing import Process
+from pathlib import Path
 from threading import Thread
 
 import httpx
@@ -16,12 +18,25 @@ from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
 from softpack_builder.app import Application
-from softpack_builder.environment import EnvironmentAPI
+from softpack_builder.environment import Environment, EnvironmentAPI
 from softpack_builder.service import ServiceAPI
 
 app = Application()
 app.register_module(ServiceAPI)
 app.register_module(EnvironmentAPI)
+
+
+@pytest.fixture
+def settings(monkeypatch):
+    with tempfile.TemporaryDirectory() as temp:
+        path = Path(temp)
+        prev = Environment.settings.spack.environments.path
+        Environment.settings.spack.environments.path = path
+        monkeypatch.setitem(
+            app.settings.spack.environments.__dict__, "path", str(path)
+        )
+        yield app.settings
+        Environment.settings.spack.environments.path = prev
 
 
 @pytest.fixture
@@ -92,7 +107,7 @@ def prefect_agent_run():
 
 
 @pytest.fixture
-def prefect_agent():
+def prefect_agent(settings):
     agent = Thread(target=prefect_agent_run, daemon=True)
     agent.start()
     yield agent

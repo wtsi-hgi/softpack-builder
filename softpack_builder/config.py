@@ -40,7 +40,7 @@ class SpackConfig(BaseModel):
         name: str
         spack: dict
 
-    environment: EnvironmentConfig
+    environments: EnvironmentConfig
     manifest: ManifestConfig
 
 

@@ -16,7 +16,7 @@ logging:
       datefmt: "%H:%M:%S"
 
 spack:
-  environment:
+  environments:
     path: /opt/softpack/environments
   manifest:
     name: spack.yaml
@@ -24,9 +24,11 @@ spack:
       repos:
         - /opt/spack-repo
       config:
-        source_cache: /opt/spack-cache
         url_fetch_method: curl
         connect_timeout: 600
+        source_cache: /opt/spack-cache
+        template_dirs:
+          - /opt/spack-templates
       view: false
       concretizer:
         unify: when_possible
