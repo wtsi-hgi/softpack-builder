@@ -45,7 +45,7 @@ def test_environment_create_command(service_thread, cli, spec) -> None:
     assert result.state.type == "SCHEDULED"
 
 
-def test_environment_create_flow(settings, spec) -> None:
+def test_environment_create_flow(spec) -> None:
     model = Environment.Model.from_yaml(spec)
     result = Box(create_environment(model.dict()))
     assert result.state.type == "RUNNING"

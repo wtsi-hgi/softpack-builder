@@ -52,6 +52,13 @@ jobs:
           ref: 0707ffd4e466402bf19dff1add59eaf2b6d9154e
           path: spack
 
+      - name: Install Spack templates
+        uses: actions/checkout@v3
+        with:
+          repository: altaf-ali/spack-templates
+          ref: main
+          path: spack-templates
+
       - name: Update PATH
         run: |
           echo "$GITHUB_WORKSPACE/spack/bin" >> $GITHUB_PATH

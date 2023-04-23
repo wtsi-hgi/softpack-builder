@@ -5,7 +5,6 @@ LICENSE file in the root directory of this source tree.
 """
 
 
-import tempfile
 import time
 from multiprocessing import Process
 from pathlib import Path
@@ -26,12 +25,21 @@ app.register_module(ServiceAPI)
 app.register_module(EnvironmentAPI)
 
 
-@pytest.fixture
-def settings(monkeypatch):
-    temp = tempfile.mkdtemp("softpack-builder-")
-    monkeypatch.setitem(app.settings.spack.environments.__dict__, "path", temp)
+@pytest.fixture(autouse=True)
+def setup(monkeypatch, tmpdir):
     monkeypatch.setitem(
-        Environment.settings.spack.environments.__dict__, "path", Path(temp)
+        app.settings.spack.environments.__dict__, "path", tmpdir
+    )
+    monkeypatch.setitem(
+        Environment.settings.spack.environments.__dict__, "path", Path(tmpdir)
+    )
+    monkeypatch.setitem(
+        Environment.settings.spack.manifest.spack.config.__dict__,
+        "template_dirs",
+        Environment.settings.spack.manifest.spack.config.template_dirs
+        + [  # noqa: W503
+            str(Path(__file__).parent.parent.absolute() / "spack-templates")
+        ],
     )
     yield app.settings
 
