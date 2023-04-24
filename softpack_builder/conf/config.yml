@@ -53,7 +53,7 @@ spack:
 singularity:
   command: singularity
   build:
-    bind: /tmp:/opt/spack-cache,~/.gpg:/opt/softpack/gpg
+    bind: /tmp:/opt/spack-cache,$HOME/.gpg:/opt/softpack/gpg
   spec: singularity_{stage}.def
   image: singularity.sif
 
