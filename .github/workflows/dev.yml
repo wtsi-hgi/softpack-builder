@@ -26,6 +26,14 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: TEST GPG DIR
+        env:
+          SPACK_GNUPGHOME1: $HOME/.gpg
+          SPACK_GNUPGHOME2: ${{ env.HOME }}/.gpg
+        run: |
+          echo SPACK_GNUPGHOME1=$SPACK_GNUPGHOME1
+          echo SPACK_GNUPGHOME2=$SPACK_GNUPGHOME2
+
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout the repository
         uses: actions/checkout@v3
