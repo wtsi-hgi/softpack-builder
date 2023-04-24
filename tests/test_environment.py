@@ -22,6 +22,8 @@ PREFECT_AGENT_TIMEOUT = 300  # max amount of time to run (in seconds)
 
 
 def pytest_generate_tests(metafunc):
+    if "spec" not in metafunc.fixturenames:
+        return
     path = Path(__file__).parent / "data/specs"
     params = {"spec": [str(file) for file in path.glob("*.yml")]}
     for fixture, param in params.items():
@@ -45,4 +47,5 @@ def test_environment_create_command(service_thread, cli, spec) -> None:
 
 def test_environment_create_flow(spec) -> None:
     model = Environment.Model.from_yaml(spec)
-    create_environment(model.dict())
+    result = Box(create_environment(model.dict()))
+    assert result.state.type == "RUNNING"

@@ -12,6 +12,12 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: Run the build with tmate debugging enabled
+        required: false
+        default: false
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -27,8 +33,11 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Setup python
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-versions }}
 
@@ -37,29 +46,50 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry tox tox-gh-actions
 
+      - name: Install Singularity
+        uses: eWaterCycle/setup-singularity@v7
+        with:
+          singularity-version: 3.8.7
+
       - name: Install Spack
         uses: actions/checkout@v3
         with:
           repository: spack/spack
-          ref: v0.19.1
+          ref: 0707ffd4e466402bf19dff1add59eaf2b6d9154e
           path: spack
 
-      - name: Create config file
+      - name: Install Spack templates
+        uses: actions/checkout@v3
+        with:
+          repository: wtsi-hgi/spack-templates
+          ref: main
+          path: spack-templates
+
+      - name: Create Spack config
         env:
-          CONFIG_PATH: $HOME/.softpack/builder
-          CONFIG_FILE: config.yml
+          CONFIG_PATH: $HOME/.spack
+          CONFIG_FILE: config.yaml
         run: |
           mkdir -p ${{ env.CONFIG_PATH }}
           cat <<EOF > ${{ env.CONFIG_PATH }}/$CONFIG_FILE
-          spack:
-            command: $GITHUB_WORKSPACE/spack/bin/spack
+          config:
+            template_dirs:
+              - $GITHUB_WORKSPACE/spack-templates
           EOF
 
-      - name: test with tox
-        run:
-          tox
+      - name: Create GPG key
+        run: |
+          SPACK_GNUPGHOME=$HOME/.gpg $GITHUB_WORKSPACE/spack/bin/spack gpg create softpack softpack@example.com
 
-      - uses: codecov/codecov-action@v3
+      - name: Update PATH
+        run: |
+          echo "$GITHUB_WORKSPACE/spack/bin" >> $GITHUB_PATH
+
+      - name: Run tests
+        run: poetry run tox
+
+      - name: Run code coverage
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           fail_ci_if_error: true

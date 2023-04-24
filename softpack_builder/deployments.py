@@ -25,7 +25,7 @@ class DeploymentRegistry:
         self.deployments = {
             flow: Deployment.build_from_flow(
                 flow=flow,
-                name=f"{flow.__name__}-deployment",
+                name=f"{flow.__name__} [default-deployment]",
                 apply=True,
             )
             for flow in flows
@@ -45,7 +45,7 @@ class DeploymentRegistry:
     def run(
         self,
         flow: Flow,
-        parameters: Optional[dict] = None,
+        parameters: Optional[dict[str, Any]] = None,
         timeout: float = 0,
         **kwargs: Any,
     ) -> Any:

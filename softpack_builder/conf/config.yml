@@ -1,9 +1,61 @@
+debug: false
+
 server:
   host: 0.0.0.0
   port: 7080
 
+logging:
+  filename: prefect.log
+  formatters:
+    prefect:
+      class: prefect.logging.formatters.PrefectFormatter
+      format: "%(asctime)s.%(msecs)03d | %(levelname)-7s | %(name)s - %(message)s"
+      flow_run_fmt: "%(asctime)s.%(msecs)03d | %(levelname)-7s | Flow run %(flow_run_name)r - %(message)s"
+      task_run_fmt: "%(asctime)s.%(msecs)03d | %(levelname)-7s | Task run %(task_run_name)r - %(message)s"
+      datefmt: "%H:%M:%S"
+
 spack:
-  command: spack
+  cache: /tmp
+  environments: /tmp
+  manifest:
+    name: spack.yaml
+    spack:
+      config:
+        url_fetch_method: curl
+        connect_timeout: 600
+      view: false
+      concretizer:
+        unify: when_possible
+      container:
+        images:
+          os: ubuntu:20.04
+          spack: v0.19.2
+        format: singularity
+        template: container/singularity_{stage}.def
+        strip: true
+        os_packages:
+          build:
+            - libclang-dev
+            - libfribidi-dev
+            - libharfbuzz-dev
+            - libhdf5-dev
+            - libpq5
+            - libxt-dev
+            - lsb-release
+            - psmisc
+            - sudo
+          final:
+            - libgfortran5
+            - libgomp1
+            - libpq5
+            - sqlite3
+
+singularity:
+  command: singularity
+  build:
+    bind: /tmp:/opt/spack-cache,$HOME/.gpg:/opt/softpack/gpg
+  spec: singularity_{stage}.def
+  image: singularity.sif
 
 artifacts:
   repo:
