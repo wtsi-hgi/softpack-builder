@@ -81,27 +81,12 @@ jobs:
         run: |
           SPACK_GNUPGHOME=$HOME/.gpg $GITHUB_WORKSPACE/spack/bin/spack gpg create softpack softpack@example.com
 
-      - name: Show Spack config
-        run: |
-          which singularity
-          echo "$HOME/.spack/config.yaml"
-          cat $HOME/.spack/config.yaml
-          echo "$GITHUB_WORKSPACE/spack-templates"
-          ls -al $GITHUB_WORKSPACE/spack-templates
-          echo "$HOME/.gpg"
-          ls -al $HOME/.gpg
-
       - name: Update PATH
         run: |
           echo "$GITHUB_WORKSPACE/spack/bin" >> $GITHUB_PATH
 
       - name: Run tests
         run: poetry run tox
-
-      # Enable tmate debugging of manually-triggered workflows
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Run code coverage
         uses: codecov/codecov-action@v3
