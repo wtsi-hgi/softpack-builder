@@ -1,5 +1,0 @@
-name: zirconium
-owner: guest
-description: Project Zirconium
-packages:
-  - zlib

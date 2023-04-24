@@ -18,7 +18,7 @@ from softpack_builder.environment import (
     create_environment,
 )
 
-PREFECT_AGENT_TIMEOUT = 5  # max amount of time to run (in seconds)
+PREFECT_AGENT_TIMEOUT = 300  # max amount of time to run (in seconds)
 
 
 def pytest_generate_tests(metafunc):

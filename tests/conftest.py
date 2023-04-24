@@ -21,8 +21,9 @@ from softpack_builder.app import app
 
 @pytest.fixture(autouse=True)
 def patch_settings(monkeypatch, tmpdir):
+    monkeypatch.setitem(app.settings.spack.__dict__, "cache", Path(tmpdir))
     monkeypatch.setitem(
-        app.settings.spack.environments.__dict__, "path", Path(tmpdir)
+        app.settings.spack.__dict__, "environments", Path(tmpdir)
     )
     yield app.settings
 

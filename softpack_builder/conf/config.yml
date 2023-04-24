@@ -6,7 +6,6 @@ server:
 
 logging:
   filename: prefect.log
-
   formatters:
     prefect:
       class: prefect.logging.formatters.PrefectFormatter
@@ -16,19 +15,14 @@ logging:
       datefmt: "%H:%M:%S"
 
 spack:
-  environments:
-    path: /opt/softpack/environments
+  cache: /tmp
+  environments: /tmp
   manifest:
     name: spack.yaml
     spack:
-      repos:
-        - /opt/spack-repo
       config:
         url_fetch_method: curl
         connect_timeout: 600
-        source_cache: /opt/spack-cache
-        template_dirs:
-          - /opt/spack-templates
       view: false
       concretizer:
         unify: when_possible
@@ -58,6 +52,8 @@ spack:
 
 singularity:
   command: singularity
+  build:
+    bind: /tmp:/opt/spack-cache,~/.gpg:/opt/softpack/gpg
   spec: singularity_{stage}.def
   image: singularity.sif
 

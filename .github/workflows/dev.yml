@@ -55,7 +55,7 @@ jobs:
       - name: Install Spack templates
         uses: actions/checkout@v3
         with:
-          repository: altaf-ali/spack-templates
+          repository: wtsi-hgi/spack-templates
           ref: main
           path: spack-templates
 
@@ -70,6 +70,12 @@ jobs:
             template_dirs:
               - $GITHUB_WORKSPACE/spack-templates
           EOF
+
+      - name: Create GPG key
+        env:
+          SPACK_GNUPGHOME: $HOME/.gpg
+        run: |
+          $GITHUB_WORKSPACE/spack/bin/spack gpg create softpack softpack@example.com
 
       - name: Show Spack config
         run: |

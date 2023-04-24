@@ -29,27 +29,29 @@ class LoggingConfig(BaseModel):
 class SpackConfig(BaseModel):
     """Spack config model."""
 
-    class EnvironmentConfig(BaseModel):
-        """Environment config model."""
-
-        path: Path
-
     class ManifestConfig(BaseModel):
         """Manifest config model."""
 
         name: str
         spack: dict
 
-    environments: EnvironmentConfig
+    cache: Path
+    environments: Path
     manifest: ManifestConfig
 
 
 class SingularityConfig(BaseModel):
     """Singularity config model."""
 
+    class BuildConfig(BaseModel):
+        """Build config model."""
+
+        bind: str
+
     command: str
     spec: str
     image: str
+    build: BuildConfig
 
 
 class ArtifactsConfig(BaseModel):

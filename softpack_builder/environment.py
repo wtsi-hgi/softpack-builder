@@ -12,8 +12,6 @@ import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-
-# from typing import Type
 from typing import Any, Callable, Union, cast
 
 import httpx
@@ -94,7 +92,7 @@ class BuildSpec(ImageSpec):
         with open(self.filename, "a") as file:
             commands = map(
                 lambda package: f"  spack -e . buildcache create"
-                f" --directory /opt/spack-cache"
+                f" --directory {self.settings.spack.cache}"
                 f" --allow-root --force {package}\n",
                 self.packages,
             )
@@ -107,8 +105,7 @@ class BuildSpec(ImageSpec):
             list[str]: List of arguments
         """
         return [
-            "--bind /opt/softpack,/opt/spack-cache",
-            "--sandbox build/",
+            f"--bind {self.settings.singularity.build.bind} --sandbox build/",
             self.filename,
         ]
 
@@ -178,6 +175,7 @@ class Environment:
 
             Args:
                 spec: Image build spec.
+                settings: Settings from the environment.
 
             Returns:
                 None
@@ -216,9 +214,7 @@ class Environment:
             FlowRunContext, prefect.context.FlowRunContext.get()
         )
         self.flow_run_id = context.flow_run.id
-        self.path = (
-            self.settings.spack.environments.path / f"{self.flow_run_id}"
-        )
+        self.path = self.settings.spack.environments / f"{self.flow_run_id}"
         self.path.mkdir(parents=True)
 
         self.flow_logger: logging.LoggerAdapter = self.init_logger()
