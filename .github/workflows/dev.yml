@@ -32,11 +32,6 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Enable tmate debugging of manually-triggered workflows
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
-
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout the repository
         uses: actions/checkout@v3
@@ -88,6 +83,7 @@ jobs:
 
       - name: Show Spack config
         run: |
+          which singularity
           echo "$HOME/.spack/config.yaml"
           cat $HOME/.spack/config.yaml
           echo "$GITHUB_WORKSPACE/spack-templates"
@@ -101,6 +97,11 @@ jobs:
 
       - name: Run tests
         run: poetry run tox
+
+      # Enable tmate debugging of manually-triggered workflows
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Run code coverage
         uses: codecov/codecov-action@v3
