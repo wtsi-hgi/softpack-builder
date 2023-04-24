@@ -83,6 +83,8 @@ jobs:
           cat $HOME/.spack/config.yaml
           echo "$GITHUB_WORKSPACE/spack-templates"
           ls -al $GITHUB_WORKSPACE/spack-templates
+          echo "$HOME/.gpg"
+          ls -al $HOME/.gpg
 
       - name: Update PATH
         run: |
