@@ -22,8 +22,6 @@ from softpack_builder.environment import (
     create_environment,
 )
 
-PREFECT_AGENT_TIMEOUT = 300  # max amount of time to run (in seconds)
-
 
 def pytest_generate_tests(metafunc):
     if "spec" not in metafunc.fixturenames:
@@ -40,7 +38,6 @@ def test_environment_create_api(client, spec) -> None:
         app.url(EnvironmentAPI.url("create")), json=model.dict()
     )
     assert response.status_code == httpx.codes.OK
-    # prefect_agent.join(PREFECT_AGENT_TIMEOUT)
 
 
 def test_environment_create_command(service_thread, cli, spec) -> None:
@@ -51,7 +48,7 @@ def test_environment_create_command(service_thread, cli, spec) -> None:
 
 def test_environment_create_flow(spec) -> None:
     model = Environment.Model.from_yaml(spec)
-    result = Box(create_environment(model.dict()))
+    result = Box(create_environment(Box(model.dict())))
     assert result.state.type == "RUNNING"
 
 
@@ -64,7 +61,7 @@ def test_environment_logger(monkeypatch, spec) -> None:
     model = Environment.Model.from_yaml(spec)
     env = Environment.from_model(**model.dict())
     with pytest.raises(TypeError):
-        env.logger.info("This code is never executed")
+        env.logger.info("This call to logger triggers the exception")
 
     def get_run_logger():
         return logging.getLogger()

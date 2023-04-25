@@ -193,7 +193,7 @@ class Environment:
 
     @classmethod
     def from_model(cls, **kwargs: Any) -> "Environment":
-        """Create an Environment model.
+        """Create Environment from a model.
 
         Args:
             **kwargs: Keyword arguments for the Environment to instantiate.
