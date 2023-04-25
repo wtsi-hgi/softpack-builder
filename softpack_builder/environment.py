@@ -133,6 +133,8 @@ class FinalSpec(ImageSpec):
 class Environment:
     """Encapsulation for a SoftPack environment."""
 
+    settings = Box(app.settings.dict())
+
     @dataclass
     class Model:
         """SoftPack environment data model."""
@@ -209,7 +211,6 @@ class Environment:
             model: An Environment.Model
         """
         self.model = model
-        self.settings = Box(app.settings.dict())
         context: FlowRunContext = cast(
             FlowRunContext, prefect.context.FlowRunContext.get()
         )
