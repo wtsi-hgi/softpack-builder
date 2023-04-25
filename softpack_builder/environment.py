@@ -216,7 +216,7 @@ class Environment:
         )
         self.flow_run_id = context.flow_run.id if context else None
         self.path = self.settings.spack.environments / f"{self.flow_run_id}"
-        self.path.mkdir(parents=True)
+        self.path.mkdir(parents=True, exist_ok=True)
 
         self.flow_logger: logging.LoggerAdapter = self.init_logger()
         self.task_logger: Union[logging.LoggerAdapter, None] = None

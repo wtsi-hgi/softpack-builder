@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 
 
 import logging
+import shutil
 from pathlib import Path
 
 import httpx
@@ -72,3 +73,5 @@ def test_environment_logger(monkeypatch, spec) -> None:
     monkeypatch.setattr(prefect, "get_run_logger", get_run_logger)
     with pytest.raises(TypeError):
         env.init_logger()
+
+    shutil.rmtree(env.path)
