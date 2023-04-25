@@ -19,7 +19,7 @@ import prefect
 import yaml
 from box import Box
 from fastapi import APIRouter
-from prefect import Task, flow, get_run_logger
+from prefect import Task, flow
 from prefect.context import FlowRunContext
 from prefect_dask.task_runners import DaskTaskRunner
 from prefect_shell import ShellOperation
@@ -213,7 +213,7 @@ class Environment:
         context: FlowRunContext = cast(
             FlowRunContext, prefect.context.FlowRunContext.get()
         )
-        self.flow_run_id = context.flow_run.id
+        self.flow_run_id = context.flow_run.id if context else None
         self.path = self.settings.spack.environments / f"{self.flow_run_id}"
         self.path.mkdir(parents=True)
 
@@ -254,10 +254,15 @@ class Environment:
         module, _, cls = formatter_class.rpartition('.')
         formatter = getattr(importlib.import_module(module), cls)(**args)
         handler.setFormatter(formatter)
-        logger = get_run_logger()
+        logger = prefect.get_run_logger()
         if isinstance(logger, logging.LoggerAdapter):
             logger.logger.addHandler(handler)
-        return cast(logging.LoggerAdapter, logger)
+            return logger
+        else:
+            raise TypeError(
+                "Received unexpected logger."
+                "Logging is only available in flow and task contexts."
+            )
 
     @staticmethod
     def task(fn: Callable, **kwargs: Any) -> Task:

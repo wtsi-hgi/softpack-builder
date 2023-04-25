@@ -5,9 +5,12 @@ LICENSE file in the root directory of this source tree.
 """
 
 
+import logging
 from pathlib import Path
 
 import httpx
+import prefect
+import pytest
 import yaml
 from box import Box
 
@@ -49,3 +52,23 @@ def test_environment_create_flow(spec) -> None:
     model = Environment.Model.from_yaml(spec)
     result = Box(create_environment(model.dict()))
     assert result.state.type == "RUNNING"
+
+
+def test_environment_logger(monkeypatch, spec) -> None:
+    def init_logger(env: Environment):
+        return logging.getLogger()
+
+    original_init_logger = Environment.init_logger
+    monkeypatch.setattr(Environment, "init_logger", init_logger)
+    model = Environment.Model.from_yaml(spec)
+    env = Environment.from_model(**model.dict())
+    with pytest.raises(TypeError):
+        env.logger.info("This code is never executed")
+
+    def get_run_logger():
+        return logging.getLogger()
+
+    monkeypatch.setattr(Environment, "init_logger", original_init_logger)
+    monkeypatch.setattr(prefect, "get_run_logger", get_run_logger)
+    with pytest.raises(TypeError):
+        env.init_logger()
