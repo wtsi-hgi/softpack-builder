@@ -93,7 +93,10 @@ class Settings(BaseSettings, Serializable):
             """
             path = Path.home() / ".softpack/builder" / cls.config_file
             overrides = cls.file_settings(path, settings)
-            overrides |= cls.vault(VaultConfig(**overrides["vault"]))
+            try:
+                overrides |= cls.vault(VaultConfig(**overrides["vault"]))
+            except KeyError as e:
+                print(e, file=sys.stderr)
             return overrides
 
         @classmethod

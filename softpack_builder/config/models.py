@@ -27,9 +27,9 @@ class LoggingConfig(BaseModel):
 class VaultConfig(BaseModel):
     """HashiCorp vault config."""
 
-    url: HttpUrl
-    path: Path
-    token: str
+    url: Optional[HttpUrl]
+    path: Optional[Path]
+    token: Optional[str]
 
 
 class EnvironmentsConfig(BaseModel):
