@@ -73,4 +73,4 @@ class Container(Serializable):
         return self.Builder(**kwargs)
 
 
-Container.register_module()
+Container.register_serializer()

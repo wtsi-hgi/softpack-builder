@@ -13,7 +13,7 @@ class Serializable:
     """Serializable interface."""
 
     @classmethod
-    def register_module(cls) -> None:
+    def register_serializer(cls) -> None:
         """Register the module with cloudpickle for serialization.
 
         Returns:
@@ -23,5 +23,5 @@ class Serializable:
             return
         cloudpickle.register_pickle_by_value(sys.modules[cls.__module__])
         for base in cls.__bases__:
-            if hasattr(base, "register_module"):
-                base.register_module()
+            if hasattr(base, "register_serializer"):
+                base.register_serializer()

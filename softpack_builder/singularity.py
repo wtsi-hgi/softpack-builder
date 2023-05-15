@@ -346,4 +346,4 @@ class Singularity(Container):
                 return [str(self.builder.image), str(self.filename)]
 
 
-Singularity.Builder.register_module()
+Singularity.Builder.register_serializer()

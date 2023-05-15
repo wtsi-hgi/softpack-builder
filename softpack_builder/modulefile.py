@@ -123,4 +123,4 @@ class ModuleFile(Serializable):
         self.artifacts.add(self.filename, Path(self.name, self.filename.name))
 
 
-ModuleFile.register_module()
+ModuleFile.register_serializer()

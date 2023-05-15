@@ -69,4 +69,4 @@ class ShellCommand(LogMixin):
             process.wait_for_completion()
 
 
-ShellCommand.register_module()
+ShellCommand.register_serializer()

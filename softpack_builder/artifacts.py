@@ -134,4 +134,4 @@ class Artifacts(Serializable):
         print(f"placeholder for adding artifact: src={src}, dest={dest}")
 
 
-Artifacts.register_module()
+Artifacts.register_serializer()

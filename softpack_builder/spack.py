@@ -191,4 +191,4 @@ class Spack(Serializable):
                 yaml.dump(manifest.to_dict(), file, sort_keys=False)
 
 
-Spack.register_module()
+Spack.register_serializer()

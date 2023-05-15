@@ -90,4 +90,4 @@ class LogMixin(Serializable):
         return self._logger()
 
 
-LogMixin.register_module()
+LogMixin.register_serializer()

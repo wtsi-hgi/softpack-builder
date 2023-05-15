@@ -142,4 +142,4 @@ class Settings(BaseSettings, Serializable):
             return cls.overrides, cls.defaults, init_settings
 
 
-Settings.register_module()
+Settings.register_serializer()

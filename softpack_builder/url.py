@@ -89,4 +89,4 @@ class URL(Serializable):
         return str(self.unparse())
 
 
-URL.register_module()
+URL.register_serializer()
