@@ -48,7 +48,7 @@ def cli() -> CLI:
 
 def service_run():
     cli = CLI()
-    cli.invoke(["service", "run", "--no-reload"])
+    cli.invoke(["service", "run"])
 
 
 @pytest.fixture

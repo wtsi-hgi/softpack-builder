@@ -54,7 +54,6 @@ markdown_extensions:
   - toc:
       baselevel: 3
       permalink: true
-#      slugify: !!python/name:pymdownx.slugs.uslugify
   - meta
 plugins:
   - include-markdown
@@ -70,6 +69,7 @@ extra:
       name: Github
     - icon: material/email
       link: "mailto:altaf.ali@sanger.ac.uk"
+
   # to enable disqus, uncomment the following and put your disqus id below
   # disqus: disqus_id
 # uncomment the following and put your google tracking id below to enable GA

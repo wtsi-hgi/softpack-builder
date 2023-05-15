@@ -14,9 +14,16 @@ logging:
       task_run_fmt: "%(asctime)s.%(msecs)03d | %(levelname)-7s | Task run %(task_run_name)r - %(message)s"
       datefmt: "%H:%M:%S"
 
+vault:
+  url:
+  path:
+  token:
+
+environments:
+  path: /tmp
+
 spack:
   cache: /tmp
-  environments: /tmp
   manifest:
     name: spack.yaml
     spack:
@@ -30,38 +37,35 @@ spack:
         images:
           os: ubuntu:20.04
           spack: v0.19.2
-        format: singularity
-        template: container/singularity_{stage}.def
         strip: true
-        os_packages:
-          build:
-            - libclang-dev
-            - libfribidi-dev
-            - libharfbuzz-dev
-            - libhdf5-dev
-            - libpq5
-            - libxt-dev
-            - lsb-release
-            - psmisc
-            - sudo
-          final:
-            - libgfortran5
-            - libgomp1
-            - libpq5
-            - sqlite3
 
-singularity:
-  command: singularity
-  build:
-    bind: /tmp:/opt/spack-cache,$HOME/.gpg:/opt/softpack/gpg
-  spec: singularity_{stage}.def
-  image: singularity.sif
+modules:
+  name: modulefile
+  templates:
+    default: default
+    path: ./templates/modules
+    patterns:
+      - name: rstudio
+        pattern: "^r(-.+?)*$"
+
+container:
+  module: singularity.Singularity
+  cache: /tmp/cache
+  singularity:
+    command: singularity
+    template: container/singularity_{stage}.def
+    build:
+      bind: /tmp:/opt/spack-cache,$HOME/.gpg:/opt/softpack/gpg
+    spec: singularity_{stage}.def
+    image: singularity.sif
+    patch:
+      - pattern: "^r(-.+?)*$"
+        final:
+          image: rocker/rstudio:4.2.2
 
 artifacts:
-  repo:
-    uri: https://github.com/user/project
-    token:
-
-  oras:
-    - username:
-      token:
+  registries:
+    default:
+      url: oras://example.com
+      username: username
+      password: password

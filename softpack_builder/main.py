@@ -10,8 +10,8 @@ from .app import app
 from .environment import EnvironmentAPI
 from .service import ServiceAPI
 
-app.register_module(ServiceAPI)
-app.register_module(EnvironmentAPI)
+ServiceAPI.register()
+EnvironmentAPI.register()
 
 
 def main() -> Any:

@@ -84,7 +84,7 @@ $ pip install poetry
 Install [Poetry][] environments for development:
 
 ``` console
-poetry install -E doc -E dev -E test
+poetry install --with dev,doc,test
 ```
 
 Run tests with [Tox][]
