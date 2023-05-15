@@ -1,5 +1,4 @@
-name: test-env
-owner: guest
 description: Test Environment
 packages:
   - ant
+  - zlib

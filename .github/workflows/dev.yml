@@ -61,9 +61,9 @@ jobs:
       - name: Install Spack templates
         uses: actions/checkout@v3
         with:
-          repository: wtsi-hgi/spack-templates
+          repository: wtsi-hgi/softpack-templates
           ref: main
-          path: spack-templates
+          path: templates
 
       - name: Create Spack config
         env:
@@ -74,7 +74,7 @@ jobs:
           cat <<EOF > ${{ env.CONFIG_PATH }}/$CONFIG_FILE
           config:
             template_dirs:
-              - $GITHUB_WORKSPACE/spack-templates
+              - $GITHUB_WORKSPACE/templates
           EOF
 
       - name: Create GPG key

@@ -15,11 +15,10 @@ import pytest
 import yaml
 from box import Box
 
-from softpack_builder.app import app
 from softpack_builder.environment import (
     Environment,
     EnvironmentAPI,
-    create_environment,
+    build_environment,
 )
 
 
@@ -32,43 +31,49 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize(fixture, param)
 
 
-def test_environment_create_api(client, spec) -> None:
+def test_environment_build_api(client, spec) -> None:
     model = Environment.Model.from_yaml(spec)
     response = client.post(
-        app.url(EnvironmentAPI.url("create")), json=model.dict()
+        EnvironmentAPI.url("build"),
+        json={"name": Path(spec).stem, "model": model.dict()},
     )
     assert response.status_code == httpx.codes.OK
 
 
-def test_environment_create_command(service_thread, cli, spec) -> None:
-    response = cli.invoke([EnvironmentAPI.name, "create", spec])
+def test_environment_build_command(service_thread, cli, spec) -> None:
+    response = cli.invoke(
+        EnvironmentAPI.command("build", spec, "--name", spec)
+    )
     result = Box(yaml.safe_load(response.stdout))
     assert result.state.type == "SCHEDULED"
 
 
-def test_environment_create_flow(spec) -> None:
+def test_environment_build_flow(spec) -> None:
     model = Environment.Model.from_yaml(spec)
-    result = Box(create_environment(Box(model.dict())))
+    result = Box(build_environment(spec, model.dict()))
     assert result.state.type == "RUNNING"
 
 
+#
 def test_environment_logger(monkeypatch, spec) -> None:
     def init_logger(env: Environment):
         return logging.getLogger()
 
-    original_init_logger = Environment.init_logger
-    monkeypatch.setattr(Environment, "init_logger", init_logger)
+    original_init_logger = Environment.Logger.init_logger
+    monkeypatch.setattr(Environment.Logger, "init_logger", init_logger)
     model = Environment.Model.from_yaml(spec)
-    env = Environment.from_model(**model.dict())
+    env = Environment.create(name=spec, model=model.dict())
     with pytest.raises(TypeError):
         env.logger.info("This call to logger triggers the exception")
 
     def get_run_logger():
         return logging.getLogger()
 
-    monkeypatch.setattr(Environment, "init_logger", original_init_logger)
+    monkeypatch.setattr(
+        Environment.Logger, "init_logger", original_init_logger
+    )
     monkeypatch.setattr(prefect, "get_run_logger", get_run_logger)
     with pytest.raises(TypeError):
-        env.init_logger()
+        env.logger.init_logger()
 
     shutil.rmtree(env.path)

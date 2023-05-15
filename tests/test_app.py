@@ -24,14 +24,13 @@ def test_openapi_redoc(client) -> None:
     assert response.status_code == httpx.codes.OK
 
 
-def test_register_module(capsys) -> None:
-    class Module:
+def test_register_api(capsys) -> None:
+    class TestAPI:
         pass
 
     app = Application()
-    app.register_module(Module)
+    app.register_api(TestAPI)
     captured = capsys.readouterr()
     assert (
-        captured.out
-        == f"type object '{Module.__name__}' has no attribute 'router'\n"  # noqa: E501, W503
-    )
+        f"type object '{TestAPI.__name__}' has no attribute" in captured.out
+    )  # noqa: E501, W503

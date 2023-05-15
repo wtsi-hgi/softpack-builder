@@ -5,8 +5,8 @@ LICENSE file in the root directory of this source tree.
 """
 
 from datetime import datetime
+from pathlib import Path
 from typing import Any
-from urllib.parse import urlunsplit
 
 import typer
 from fastapi import FastAPI
@@ -15,7 +15,8 @@ from typer import Typer
 
 from softpack_builder import __version__
 
-from .config import Settings
+from .config.settings import Settings
+from .url import URL
 
 
 @singleton
@@ -28,20 +29,28 @@ class Application:
         self.commands = Typer()
         self.settings = Settings.parse_obj({})
 
-    def register_module(self, module: Any) -> None:
-        """Register a module with the application.
+    def register_api(self, api: Any) -> None:
+        """Register an API with the application.
 
         Args:
-            module: A class with router and commands members.
+            api: An API class to register.
 
         Returns:
             None.
         """
-        try:
-            self.router.include_router(module.router)
-            self.commands.add_typer(module.commands, name=module.name)
-        except AttributeError as e:
-            self.echo(e)
+
+        def include_router() -> None:
+            return self.router.include_router(api.router)
+
+        def add_typer() -> None:
+            name = Path(api.prefix).name
+            return self.commands.add_typer(api.commands, name=name)
+
+        for registry_func in [include_router, add_typer]:
+            try:
+                registry_func()
+            except AttributeError as e:
+                typer.echo(e)
 
     def echo(self, *args: Any, **kwargs: Any) -> Any:
         """Print a message using Typer/Click echo.
@@ -74,26 +83,23 @@ class Application:
         Returns:
             str: URL path
         """
-        return urlunsplit(
-            (
-                scheme,
-                f"{app.settings.server.host}:{app.settings.server.port}",
-                path,
-                "",
-                "",
-            )
+        url = URL(
+            scheme=scheme,
+            netloc=f"{app.settings.server.host}:{app.settings.server.port}",
+            path=path,
         )
+        return str(url)
 
 
 app = Application()
 
 
 @app.router.get("/")
-def root() -> dict:
+def root() -> dict[str, Any]:
     """HTTP GET handler for / route.
 
     Returns:
-        dict: Application status
+        dict: Application status to return.
     """
     return {
         "time": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f'),

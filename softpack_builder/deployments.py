@@ -17,7 +17,7 @@ class DeploymentRegistry:
         """Build and register deployments from flows.
 
         Args:
-            *flows: A list of flows
+            *flows: A list of flows to register.
 
         Returns:
             dict: A dictionary of flows and their corresponding deployments.
@@ -53,9 +53,9 @@ class DeploymentRegistry:
 
         Args:
             flow: A flow function.
-            parameters: Dictionary of arguments to pass to the deployment
-            timeout: Timeout to wait before returning
-            **kwargs: Additional keyword arguments
+            parameters: Dictionary of arguments to pass to the deployment.
+            timeout: Timeout to wait before returning.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             Any: The return value of running the deployment.

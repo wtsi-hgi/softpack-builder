@@ -4,85 +4,42 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import sys
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
+import hvac
 import yaml
-from pydantic import AnyHttpUrl, BaseModel, BaseSettings
+from pydantic import BaseSettings
+
+# from pydantic import AnyHttpUrl, AnyUrl, BaseModel, BaseSettings, HttpUrl
 from pydantic.env_settings import SettingsSourceCallable
 
+from softpack_builder.serializable import Serializable
 
-class ServerConfig(BaseModel):
-    """Server config model."""
-
-    host: str
-    port: int
-
-
-class LoggingConfig(BaseModel):
-    """Logging config model."""
-
-    filename: Path
-    formatters: dict[str, dict[str, str]]
-
-
-class SpackConfig(BaseModel):
-    """Spack config model."""
-
-    class ManifestConfig(BaseModel):
-        """Manifest config model."""
-
-        name: str
-        spack: dict
-
-    cache: Path
-    environments: Path
-    manifest: ManifestConfig
+from .models import (
+    ArtifactsConfig,
+    ContainerConfig,
+    EnvironmentsConfig,
+    LoggingConfig,
+    ModulesConfig,
+    ServerConfig,
+    SpackConfig,
+    VaultConfig,
+)
 
 
-class SingularityConfig(BaseModel):
-    """Singularity config model."""
-
-    class BuildConfig(BaseModel):
-        """Build config model."""
-
-        bind: str
-
-    command: str
-    spec: str
-    image: str
-    build: BuildConfig
-
-
-class ArtifactsConfig(BaseModel):
-    """Artifacts config model."""
-
-    class Repo(BaseModel):
-        """Repo model."""
-
-        uri: AnyHttpUrl
-        token: Optional[str]
-
-    repo: Repo
-
-    class ORAS(BaseModel):
-        """ORAS model."""
-
-        username: Optional[str]
-        token: Optional[str]
-        uri: Optional[AnyHttpUrl]
-
-    oras: Optional[list[ORAS]]
-
-
-class Settings(BaseSettings):
+class Settings(BaseSettings, Serializable):
     """Package settings."""
 
     debug: bool = False
     server: ServerConfig
+    vault: VaultConfig
     logging: LoggingConfig
     spack: SpackConfig
-    singularity: SingularityConfig
+    environments: EnvironmentsConfig
+    modules: ModulesConfig
+    container: ContainerConfig
     artifacts: ArtifactsConfig
 
     class Config:
@@ -105,7 +62,7 @@ class Settings(BaseSettings):
                 dict[str, Any]: A dictionary of settings.
             """
             if not path.is_file():
-                return settings.dict()
+                return {}
             with open(path) as f:
                 return yaml.safe_load(f)
 
@@ -118,7 +75,6 @@ class Settings(BaseSettings):
 
             Returns:
                dict[str, Any]: Settings loaded from default config file.
-
             """
             package_dir = Path(__file__).parent.absolute()
             path = package_dir / cls.config_dir / cls.config_file
@@ -134,10 +90,34 @@ class Settings(BaseSettings):
             Returns:
                 dict[str, Any]: Settings loaded from deployment-specific
                 config file.
-
             """
             path = Path.home() / ".softpack/builder" / cls.config_file
-            return cls.file_settings(path, settings)
+            overrides = cls.file_settings(path, settings)
+            overrides |= cls.vault(VaultConfig(**overrides["vault"]))
+            return overrides
+
+        @classmethod
+        def vault(cls, vault: VaultConfig) -> dict[str, Any]:
+            """Load secrets from HashiCorp Vault.
+
+            Args:
+                settings: BaseSettings model.
+
+            Returns:
+                dict[str, Any]: Settings loaded from HashiCorp Vault.
+            """
+            try:
+                client = hvac.Client(
+                    url=vault.url,
+                    token=vault.token,
+                )
+                secret = client.kv.v1.read_secret(
+                    path=str(vault.path), mount_point="/"
+                )
+                return secret["data"]
+            except Exception as e:
+                print(e, file=sys.stderr)
+                return {}
 
         @classmethod
         def customise_sources(
@@ -155,6 +135,8 @@ class Settings(BaseSettings):
 
             Returns:
                 A tuple of settings sources
-
             """
             return cls.overrides, cls.defaults, init_settings
+
+
+Settings.register_module()
