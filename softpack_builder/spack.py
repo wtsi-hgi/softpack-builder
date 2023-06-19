@@ -4,6 +4,7 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+import socket
 from pathlib import Path
 from typing import Any
 
@@ -124,11 +125,10 @@ class Spack(Serializable):
         """
         return self.env_command(
             "buildcache",
-            "create",
-            "--directory",
-            self.settings.spack.cache,
+            "push",
             "--allow-root",
             "--force",
+            socket.gethostname(),
             package,
         )
 
