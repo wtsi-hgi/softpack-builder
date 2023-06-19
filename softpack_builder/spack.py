@@ -115,7 +115,7 @@ class Spack(Serializable):
         return self.env_command("concretize")
 
     def env_buildcache(self, package: str) -> Command:
-        """Create build cache for a package.
+        """Push build cache for a package.
 
         Args:
             package: A package to cache.
@@ -123,7 +123,9 @@ class Spack(Serializable):
         Returns:
             Command: A new Command object.
         """
-        return self.env_command(
+        return self.command(
+            "--env",
+            ".",
             "buildcache",
             "push",
             "--allow-root",
