@@ -83,7 +83,7 @@ class ContainerConfig(BaseModel):
             bind: str
 
         class PatchConfig(BaseModel):
-            """patch config model."""
+            """Patch config model."""
 
             pattern: str
             build: Optional[dict[str, Any]]
