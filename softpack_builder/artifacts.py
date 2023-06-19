@@ -50,7 +50,7 @@ class Artifacts(Serializable):
 
             Args:
                 name: Image path
-                registry: Container registru config
+                registry: Container registry config
             """
             super().__init__()
             self.name = Path(name.lstrip())

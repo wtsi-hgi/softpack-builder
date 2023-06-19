@@ -11,8 +11,6 @@ from typing import Any, Tuple
 import hvac
 import yaml
 from pydantic import BaseSettings
-
-# from pydantic import AnyHttpUrl, AnyUrl, BaseModel, BaseSettings, HttpUrl
 from pydantic.env_settings import SettingsSourceCallable
 
 from softpack_builder.serializable import Serializable
@@ -45,8 +43,9 @@ class Settings(BaseSettings, Serializable):
     class Config:
         """Configuration loader."""
 
-        config_dir = "conf"
         config_file = "config.yml"
+        default_config_dir = "conf"
+        user_config_dir = ".softpack/builder"
 
         @classmethod
         def file_settings(
@@ -77,7 +76,7 @@ class Settings(BaseSettings, Serializable):
                dict[str, Any]: Settings loaded from default config file.
             """
             package_dir = Path(__file__).parent.absolute()
-            path = package_dir / cls.config_dir / cls.config_file
+            path = package_dir / cls.default_config_dir / cls.config_file
             return cls.file_settings(path, settings)
 
         @classmethod
@@ -91,7 +90,7 @@ class Settings(BaseSettings, Serializable):
                 dict[str, Any]: Settings loaded from deployment-specific
                 config file.
             """
-            path = Path.home() / ".softpack/builder" / cls.config_file
+            path = Path.home() / cls.user_config_dir / cls.config_file
             overrides = cls.file_settings(path, settings)
             try:
                 overrides |= cls.vault(VaultConfig(**overrides["vault"]))

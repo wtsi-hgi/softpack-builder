@@ -102,6 +102,6 @@ def root() -> dict[str, Any]:
         dict: Application status to return.
     """
     return {
-        "time": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f'),
+        "time": str(datetime.now()),
         "softpack": {"builder": {"version": __version__}},
     }
