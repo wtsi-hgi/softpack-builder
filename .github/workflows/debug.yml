@@ -1,0 +1,39 @@
+name: debug
+
+on:
+  push:
+    branches: [ feature/debug ]
+
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: Run the build with tmate debugging enabled
+        required: false
+        default: false
+
+jobs:
+  debug:
+    strategy:
+      matrix:
+        python-versions: ["3.11"]
+        os: [ubuntu-20.04]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Get version from tag
+        id: tag_name
+        run: |
+          echo ::set-output name=current_version::${GITHUB_REF#refs/tags/v}
+        shell: bash
+
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Get Changelog Entry
+        id: changelog_reader
+        uses: mindsers/changelog-reader-action@v2.2.2
+        with:
+          validation_depth: 10
+          version: ${{ steps.tag_name.outputs.current_version }}
+          path: ./CHANGELOG.md
