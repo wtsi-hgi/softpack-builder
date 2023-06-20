@@ -10,11 +10,11 @@ nav:
   - Tutorials:
     - tutorials/getting_started.md
   - Guides:
-      - guides/how-to-manually-start-a-build.md
+      - guides/how-to-start-a-build.md
   - Reference:
     - reference/cli.md
-    - reference/rest.md
     - reference/api.md
+    - reference/rest.md
   - Contributing: contributing.md
   - Changelog: changelog.md
 theme:
@@ -54,7 +54,6 @@ markdown_extensions:
   - toc:
       baselevel: 3
       permalink: true
-#      slugify: !!python/name:pymdownx.slugs.uslugify
   - meta
 plugins:
   - include-markdown
@@ -70,6 +69,7 @@ extra:
       name: Github
     - icon: material/email
       link: "mailto:altaf.ali@sanger.ac.uk"
+
   # to enable disqus, uncomment the following and put your disqus id below
   # disqus: disqus_id
 # uncomment the following and put your google tracking id below to enable GA

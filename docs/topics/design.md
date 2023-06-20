@@ -1,14 +1,9 @@
 !!! info
     This documentation is under development and may be incomplete.
 
-SoftPack Builder is a lightweight service that listens to WebHooks from
-[SoftPack Artifacts][] repository and proceeds to build a container image from a
-given environment spec.
-
-## Glossary
-
-!!! note "TODO"
-    Add glossary
+SoftPack Builder is a lightweight service that builds container images and
+other related artifacts for a software environment based on a list of end-user
+requirements.
 
 ```mermaid
 flowchart TB
@@ -30,7 +25,7 @@ flowchart TB
     softpack_builder -->|"REST API (GitLab, Docker Registry) / HTTP"| softpack_artifacts
 ```
 
-## Execution environment
+## Build execution
 
 SoftPack Builder uses [Prefect][] to execute the build flows. The build flow is
 responsible for taking the input spec (received through a webhook or the
@@ -39,6 +34,7 @@ the target system. The build flow carries out the following tasks:
 
 - Create a spack environment file from input spec
 - Start spack build
+- Create contanier image
 - Create module file
 - Push to artifacts repo
     - spack environment file
@@ -46,8 +42,40 @@ the target system. The build flow carries out the following tasks:
     - container image
     - module file
 
-!!! note "TODO"
-    Add flow diagram
+## Input spec
+
+The input spec provides a list of platform-agnostic requirements for building
+a software environment.
+
+| Attribute   | Type       |
+|-------------|------------|
+| name        | string     |
+| description | string     |
+| packages    | string[]   |
+
+
+## Sequence diagram
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant softpack_artifacts as SoftPack Artifacts
+  participant softpack_builder as SoftPack Builder
+  participant prefect_flow as Prefect Flow
+  participant task_runner as Task Runner
+
+  softpack_artifacts ->> softpack_builder: Input spec
+  softpack_builder ->> softpack_artifacts: Environment spec
+  softpack_builder ->> prefect_flow: Build environment
+  prefect_flow ->> task_runner: Start spack build
+  activate task_runner
+  prefect_flow ->> task_runner: Create container image
+  prefect_flow ->> task_runner: Create module file
+  prefect_flow ->> task_runner: Save artifacts
+  task_runner ->> softpack_artifacts: Push artifacts
+  deactivate task_runner
+
+```
 
 All tasks within the build flow are defined as asynchronous tasks to allow
 scalability by running the tasks in a distributed environment. Within a flow
@@ -57,7 +85,13 @@ itself, sequential dependencies between tasks are handled by passing a
 ### Clutser setup
 
 !!! note "TODO"
-    TODO: Add cluster setup
+    Add cluster setup
+
+## Glossary
+
+!!! note "TODO"
+Add glossary
+
 
 [Prefect]: https://docs.prefect.io
 [PrefectFuture]: https://docs.prefect.io/api-ref/prefect/futures/#prefect.futures.PrefectFuture

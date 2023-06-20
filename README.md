@@ -5,6 +5,8 @@
 [![python](https://img.shields.io/pypi/pyversions/softpack-builder.svg)](https://pypi.org/project/softpack-builder/)
 [![Build Status](https://github.com/wtsi-hgi/softpack-builder/actions/workflows/dev.yml/badge.svg)](https://github.com/wtsi-hgi/softpack-builder/actions/workflows/dev.yml)
 [![codecov](https://codecov.io/gh/wtsi-hgi/softpack-builder/branch/main/graphs/badge.svg)](https://codecov.io/github/wtsi-hgi/softpack-builder)
+[![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/wtsi-hgi/softpack-builder.svg)](http://isitmaintained.com/project/wtsi-hgi/softpack-builder "Average time to resolve an issue")
+[![Percentage of issues still open](http://isitmaintained.com/badge/open/wtsi-hgi/softpack-builder.svg)](http://isitmaintained.com/project/wtsi-hgi/softpack-builder "Percentage of issues still open")
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](https://www.contributor-covenant.org/version/2/1/code_of_conduct)
 
@@ -49,7 +51,7 @@ the [Github repo][].
 You can either clone the public repository:
 
 ``` console
-$ git clone git://github.com/wtsi-hgi/softpack-builder
+$ git clone https://github.com/wtsi-hgi/softpack-builder.git
 ```
 
 Or download the [tarball][]:
@@ -64,13 +66,49 @@ Once you have a copy of the source, you can install it with:
 $ pip install .
 ```
 
+### Development
+
+For development mode, clone the repository and use [Poetry][] to install the
+package.
+
+``` console
+$ git clone https://github.com/wtsi-hgi/softpack-builder.git
+```
+
+Install [Poetry][]:
+
+``` console
+$ pip install poetry
+```
+
+Install [Poetry][] environments for development:
+
+``` console
+poetry install --with dev,doc,test
+```
+
+Run tests with [Tox][]
+
+``` console
+poetry run tox
+```
+
+Run [MkDocs] server to view documentation:
+
+``` console
+poetry run mkdocs serve
+```
+
+
 [pip]: https://pip.pypa.io
 [Python installation guide]: http://docs.python-guide.org/en/latest/starting/installation/
 [Github repo]: https://github.com/wtsi-hgi/softpack-builder
 [tarball]: https://github.com/wtsi-hgi/softpack-builder/tarball/master
 [Dask]: https://www.dask.org
 [Prefect]: https://www.prefect.io
-
+[Poetry]: https://python-poetry.org
+[Tox]: https://tox.wiki
+[MkDocs]: https://www.mkdocs.org
 
 ## Credits
 

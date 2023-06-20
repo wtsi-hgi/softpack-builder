@@ -1,0 +1,71 @@
+debug: false
+
+server:
+  host: 0.0.0.0
+  port: 7080
+
+logging:
+  filename: prefect.log
+  formatters:
+    prefect:
+      class: prefect.logging.formatters.PrefectFormatter
+      format: "%(asctime)s.%(msecs)03d | %(levelname)-7s | %(name)s - %(message)s"
+      flow_run_fmt: "%(asctime)s.%(msecs)03d | %(levelname)-7s | Flow run %(flow_run_name)r - %(message)s"
+      task_run_fmt: "%(asctime)s.%(msecs)03d | %(levelname)-7s | Task run %(task_run_name)r - %(message)s"
+      datefmt: "%H:%M:%S"
+
+vault:
+  url:
+  path:
+  token:
+
+environments:
+  path: /tmp
+
+spack:
+  cache: /tmp
+  manifest:
+    name: spack.yaml
+    spack:
+      config:
+        url_fetch_method: curl
+        connect_timeout: 600
+      view: false
+      concretizer:
+        unify: when_possible
+      container:
+        images:
+          os: ubuntu:20.04
+          spack: v0.19.2
+        strip: true
+
+modules:
+  name: modulefile
+  templates:
+    default: default
+    path: ./templates/modules
+    patterns:
+      - name: rstudio
+        pattern: "^r(-.+?)*$"
+
+container:
+  module: singularity.Singularity
+  cache: /tmp/cache
+  singularity:
+    command: singularity
+    template: container/singularity_{stage}.def
+    build:
+      bind: /tmp:/opt/spack-cache,$HOME/.gpg:/opt/softpack/gpg
+    spec: singularity_{stage}.def
+    image: singularity.sif
+    patch:
+      - pattern: "^r(-.+?)*$"
+        final:
+          image: rocker/rstudio:4.2.2
+
+artifacts:
+  registries:
+    default:
+      url: oras://example.com
+      username: username
+      password: password
