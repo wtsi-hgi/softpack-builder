@@ -5,7 +5,7 @@ LICENSE file in the root directory of this source tree.
 """
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import AnyUrl, BaseModel, HttpUrl
 
@@ -27,9 +27,13 @@ class LoggingConfig(BaseModel):
 class VaultConfig(BaseModel):
     """HashiCorp vault config."""
 
-    url: Optional[HttpUrl]
-    path: Optional[Path]
-    token: Optional[str]
+    url: HttpUrl
+    path: Path
+    token: str
+
+    def __bool__(self) -> bool:
+        """Equality operator."""
+        return all([self.url, self.path, self.token])
 
 
 class EnvironmentsConfig(BaseModel):
@@ -44,8 +48,15 @@ class SpackConfig(BaseModel):
     class ManifestConfig(BaseModel):
         """Manifest config model."""
 
+        class SpecConfig(BaseModel):
+            """Spec config model."""
+
+            pattern: str
+            spack: dict[str, Any]
+
         name: str
         spack: dict
+        specs: list[SpecConfig]
 
     cache: Path
     manifest: ManifestConfig
@@ -57,15 +68,15 @@ class ModulesConfig(BaseModel):
     class TemplatesConfig(BaseModel):
         """Templates config model."""
 
-        class PatternConfig(BaseModel):
-            """Pattern config model."""
+        class SpecConfig(BaseModel):
+            """Spec config model."""
 
             name: str
             pattern: str
 
         default: str
         path: Path
-        patterns: list[PatternConfig]
+        specs: list[SpecConfig]
 
     name: str
     templates: TemplatesConfig
@@ -82,23 +93,34 @@ class ContainerConfig(BaseModel):
 
             bind: str
 
-        class PatchConfig(BaseModel):
-            """Patch config model."""
-
-            pattern: str
-            build: Optional[dict[str, Any]]
-            final: Optional[dict[str, Any]]
-
         command: str
         template: Path
         spec: str
         build: BuildConfig
         image: Path
-        patch: list[PatchConfig]
 
     module: str
     cache: Path
     singularity: SingularityConfig
+
+
+class PackagesConfig(BaseModel):
+    """Packages config model."""
+
+    class RepoConfig(BaseModel):
+        """Repo config model."""
+
+        namespace: str
+
+    class TemplatesConfig(BaseModel):
+        """Templates config model."""
+
+        path: Path
+
+    repo: RepoConfig
+    templates: TemplatesConfig
+    exclude: list[str]
+    rename: dict[str, str]
 
 
 class Credentials(BaseModel):

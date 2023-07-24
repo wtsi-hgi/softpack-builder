@@ -4,16 +4,12 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 import typer
 from fastapi import FastAPI
 from singleton_decorator import singleton
 from typer import Typer
-
-from softpack_builder import __version__
 
 from .config.settings import Settings
 from .url import URL
@@ -29,28 +25,27 @@ class Application:
         self.commands = Typer()
         self.settings = Settings.parse_obj({})
 
-    def register_api(self, api: Any) -> None:
-        """Register an API with the application.
+    def register_plugin(self, plugin: Any) -> None:
+        """Register a plugin with the application.
 
         Args:
-            api: An API class to register.
+            plugin: Plugin to register.
 
         Returns:
             None.
         """
 
         def include_router() -> None:
-            return self.router.include_router(api.router)
+            return self.router.include_router(plugin.router)
 
         def add_typer() -> None:
-            name = Path(api.prefix).name
-            return self.commands.add_typer(api.commands, name=name)
+            return self.commands.add_typer(plugin.commands)
 
         for registry_func in [include_router, add_typer]:
             try:
                 registry_func()
-            except AttributeError as e:
-                typer.echo(e)
+            except AttributeError:
+                pass
 
     def echo(self, *args: Any, **kwargs: Any) -> Any:
         """Print a message using Typer/Click echo.
@@ -74,7 +69,7 @@ class Application:
 
     @staticmethod
     def url(path: str = "/", scheme: str = "http") -> str:
-        """Get absolute URL path.
+        """Get absolute URL path with current host and port settings.
 
         Args:
             path: Relative URL path
@@ -92,16 +87,3 @@ class Application:
 
 
 app = Application()
-
-
-@app.router.get("/")
-def root() -> dict[str, Any]:
-    """HTTP GET handler for / route.
-
-    Returns:
-        dict: Application status to return.
-    """
-    return {
-        "time": str(datetime.now()),
-        "softpack": {"builder": {"version": __version__}},
-    }
