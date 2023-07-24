@@ -7,11 +7,13 @@ LICENSE file in the root directory of this source tree.
 from typing import Any
 
 from .app import app
-from .environment import EnvironmentAPI
-from .service import ServiceAPI
+from .environment import EnvironmentPlugin
+from .package import PackagePlugin
+from .service import ServicePlugin
 
-ServiceAPI.register()
-EnvironmentAPI.register()
+EnvironmentPlugin.register()
+PackagePlugin.register()
+ServicePlugin.register()
 
 
 def main() -> Any:

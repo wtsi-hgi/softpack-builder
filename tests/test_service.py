@@ -8,10 +8,11 @@ import httpx
 from box import Box
 
 from softpack_builder import __version__
-from softpack_builder.app import app
+from softpack_builder.service import ServicePlugin
 
 
 def test_service_run(service_thread) -> None:
-    response = httpx.get(app.url())
+    http = httpx.Client(follow_redirects=True)
+    response = http.get(ServicePlugin.url())
     status = Box(response.json())
     assert status.softpack.builder.version == __version__

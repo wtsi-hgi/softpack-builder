@@ -6,9 +6,10 @@ LICENSE file in the root directory of this source tree.
 
 import sys
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 
 import hvac
+import mergedeep
 import yaml
 from pydantic import BaseSettings
 from pydantic.env_settings import SettingsSourceCallable
@@ -21,6 +22,7 @@ from .models import (
     EnvironmentsConfig,
     LoggingConfig,
     ModulesConfig,
+    PackagesConfig,
     ServerConfig,
     SpackConfig,
     VaultConfig,
@@ -32,13 +34,14 @@ class Settings(BaseSettings, Serializable):
 
     debug: bool = False
     server: ServerConfig
-    vault: VaultConfig
     logging: LoggingConfig
     spack: SpackConfig
     environments: EnvironmentsConfig
     modules: ModulesConfig
     container: ContainerConfig
     artifacts: ArtifactsConfig
+    packages: Optional[PackagesConfig]
+    vault: Optional[VaultConfig]
 
     class Config:
         """Configuration loader."""
@@ -93,7 +96,8 @@ class Settings(BaseSettings, Serializable):
             path = Path.home() / cls.user_config_dir / cls.config_file
             overrides = cls.file_settings(path, settings)
             try:
-                overrides |= cls.vault(VaultConfig(**overrides["vault"]))
+                config = cls.vault(VaultConfig(**overrides["vault"]))
+                overrides = mergedeep.merge(overrides, config)
             except KeyError as e:
                 print(e, file=sys.stderr)
             return overrides
@@ -113,10 +117,24 @@ class Settings(BaseSettings, Serializable):
                     url=vault.url,
                     token=vault.token,
                 )
-                secret = client.kv.v1.read_secret(
+
+                def get_secret(path: Path, key: str) -> dict[str, Any]:
+                    secret = client.kv.v1.read_secret(
+                        path=str(path / key), mount_point="/"
+                    )
+                    return secret["data"]
+
+                secrets = client.secrets.kv.v1.list_secrets(
                     path=str(vault.path), mount_point="/"
                 )
-                return secret["data"]
+
+                return {
+                    vault.path.name: {
+                        key: get_secret(vault.path, key)
+                        for key in secrets["data"]["keys"]
+                    }
+                }
+
             except Exception as e:
                 print(e, file=sys.stderr)
                 return {}

@@ -5,40 +5,42 @@ LICENSE file in the root directory of this source tree.
 """
 
 from pathlib import Path
+from typing import Optional
 
 from .app import app
 
 
-class API:
-    """API base class."""
+class Plugin:
+    """Plugin base class."""
 
+    name = "plugin"
     prefix = "/"
 
     @classmethod
     def register(cls) -> None:
-        """Register the API with the application.
+        """Register the plugin with the application.
 
         Returns:
             None.
         """
-        app.register_api(cls)
+        app.register_plugin(cls)
 
     @classmethod
     def command(cls, command: str, *args: str) -> list[str]:
         """Build a command with arguments.
 
         Args:
-            command: Command to run
-            *args: Positional arguments
+            command: Command to run.
+            *args: Positional arguments.
 
         Returns:
             list[str]: A build command line to execute.
 
         """
-        return [Path(cls.prefix).name, command, *args]
+        return [cls.name, command, *args]
 
     @classmethod
-    def url(cls, path: str) -> str:
+    def url(cls, path: Optional[str] = None) -> str:
         """Get absolute URL path.
 
         Args:
@@ -47,4 +49,5 @@ class API:
         Returns:
             str: URL path
         """
+        path = path or ""
         return app.url(path=str(Path(cls.prefix) / path))

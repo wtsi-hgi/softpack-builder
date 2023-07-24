@@ -8,9 +8,9 @@ nav:
   - Topics:
     - topics/design.md
   - Tutorials:
-    - tutorials/getting_started.md
-  - Guides:
-      - guides/how-to-start-a-build.md
+    - tutorials/getting-started.md
+  - How-to Guides:
+      - how-to-guides/how-to-start-a-build.md
   - Reference:
     - reference/cli.md
     - reference/api.md

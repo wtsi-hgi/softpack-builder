@@ -26,6 +26,12 @@ spack:
   cache: /tmp
   manifest:
     name: spack.yaml
+    specs:
+      - pattern: "^r(-.+?)*$"
+        spack:
+          container:
+            images:
+              final: rocker/rstudio:4.3.1
     spack:
       config:
         url_fetch_method: curl
@@ -35,18 +41,9 @@ spack:
         unify: when_possible
       container:
         images:
-          os: ubuntu:20.04
-          spack: v0.19.2
+          build: spack/ubuntu-focal:v0.20.1
+          final: ubuntu:20.04
         strip: true
-
-modules:
-  name: modulefile
-  templates:
-    default: default
-    path: ./templates/modules
-    patterns:
-      - name: rstudio
-        pattern: "^r(-.+?)*$"
 
 container:
   module: singularity.Singularity
@@ -58,10 +55,15 @@ container:
       bind: /tmp:/opt/spack-cache,$HOME/.gpg:/opt/softpack/gpg
     spec: singularity_{stage}.def
     image: singularity.sif
-    patch:
-      - pattern: "^r(-.+?)*$"
-        final:
-          image: rocker/rstudio:4.2.2
+
+modules:
+  name: modulefile
+  templates:
+    default: default
+    path: ./templates/modules
+    specs:
+      - name: rstudio
+        pattern: "^r(-.+?)*$"
 
 artifacts:
   registries:
@@ -69,3 +71,16 @@ artifacts:
       url: oras://example.com
       username: username
       password: password
+
+packages:
+  repo:
+    namespace: softpack
+  templates:
+    path: ./templates/packages
+  exclude:
+    - r-methods
+    - r-stats
+    - r-tools
+    - r-utils
+  rename:
+    r-seurat-object: r-seuratobject

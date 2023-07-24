@@ -11,7 +11,7 @@ from softpack_builder.app import Application
 
 def test_root(client) -> None:
     response = client.get("/")
-    assert response.status_code == httpx.codes.OK
+    assert response.status_code == httpx.codes.NOT_FOUND
 
 
 def test_openapi_docs(client) -> None:
@@ -24,13 +24,11 @@ def test_openapi_redoc(client) -> None:
     assert response.status_code == httpx.codes.OK
 
 
-def test_register_api(capsys) -> None:
-    class TestAPI:
+def test_register_plugin(capsys) -> None:
+    class TestPlugin:
         pass
 
     app = Application()
-    app.register_api(TestAPI)
+    app.register_plugin(TestPlugin)
     captured = capsys.readouterr()
-    assert (
-        f"type object '{TestAPI.__name__}' has no attribute" in captured.out
-    )  # noqa: E501, W503
+    assert not captured.out and not captured.err

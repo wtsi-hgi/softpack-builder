@@ -59,7 +59,7 @@ Ready to contribute? Here's how to set up `softpack-builder` for local developme
 4. Install dependencies and start your virtualenv:
 
     ```
-    $ poetry install -E test -E doc -E dev
+    $ poetry install --with dev,doc,test
     ```
 
 5. Create a branch for local development:
@@ -95,7 +95,7 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the list in README.md.
-3. The pull request should work for Python 3.8, 3.9, 3.10, and 3.11. Check
+3. The pull request should work for Python 3.9, 3.10, and 3.11. Check
    [https://github.com/wtsi-hgi/softpack-builder/actions](https://github.com/wtsi-hgi/softpack-builder/actions)
    and make sure that the tests pass for all supported Python versions.
 

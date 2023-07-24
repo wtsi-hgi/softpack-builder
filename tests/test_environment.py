@@ -17,7 +17,7 @@ from box import Box
 
 from softpack_builder.environment import (
     Environment,
-    EnvironmentAPI,
+    EnvironmentPlugin,
     build_environment,
 )
 
@@ -34,7 +34,7 @@ def pytest_generate_tests(metafunc):
 def test_environment_build_api(client, spec) -> None:
     model = Environment.Model.from_yaml(spec)
     response = client.post(
-        EnvironmentAPI.url("build"),
+        EnvironmentPlugin.url("build"),
         json={"name": Path(spec).stem, "model": model.dict()},
     )
     assert response.status_code == httpx.codes.OK
@@ -42,7 +42,7 @@ def test_environment_build_api(client, spec) -> None:
 
 def test_environment_build_command(service_thread, cli, spec) -> None:
     response = cli.invoke(
-        EnvironmentAPI.command("build", spec, "--name", spec)
+        EnvironmentPlugin.command("build", spec, "--name", spec)
     )
     result = Box(yaml.safe_load(response.stdout))
     assert result.state.type == "SCHEDULED"
@@ -54,7 +54,6 @@ def test_environment_build_flow(spec) -> None:
     assert result.state.type == "RUNNING"
 
 
-#
 def test_environment_logger(monkeypatch, spec) -> None:
     def init_logger(env: Environment):
         return logging.getLogger()
