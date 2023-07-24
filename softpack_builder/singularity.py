@@ -4,7 +4,6 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, cast
@@ -208,7 +207,9 @@ class Singularity(Container):
                 """
                 self.builder = cast(Singularity.Builder, builder)
                 self.settings = self.builder.settings.container.singularity
-                self.spack = Spack(self.builder.name, self.builder.path)
+                self.spack = Spack.Environment(
+                    self.builder.name, self.builder.path
+                )
                 self.stage_name = self.__class__.__name__.lower()
                 self.filename = self.builder.path / self.settings.spec.format(
                     stage=self.stage_name
@@ -224,7 +225,7 @@ class Singularity(Container):
                     None.
                 """
                 self.patch_manifest()
-                self.spack.env_containerize(self.filename)()
+                self.spack.containerize(self.filename)()
                 self.patch()
                 self.builder.artifacts.add(
                     self.filename, Path(self.builder.name, self.filename.name)
@@ -254,7 +255,6 @@ class Singularity(Container):
                 }
                 self.spack.patch_manifest(patch)
 
-            @abstractmethod
             def patch(self) -> None:
                 """Patch the build definition.
 
@@ -283,7 +283,7 @@ class Singularity(Container):
                     commands = ["# spack build cache"] + list(
                         map(
                             lambda package: str(
-                                self.spack.env_buildcache(package)
+                                self.spack.buildcache(package)
                             ),
                             self.builder.model.packages,
                         )
@@ -307,35 +307,6 @@ class Singularity(Container):
 
         class Final(Stage):
             """Singularity final stage."""
-
-            def patch(self) -> None:
-                """Patch the build definition.
-
-                Returns:
-                    None.
-                """
-                image = None
-                for patch in self.settings.patch:
-                    regex = re.compile(patch.pattern)
-                    if list(filter(regex.match, self.builder.model.packages)):
-                        image = patch[self.stage_name].image
-                        break
-
-                with open(self.filename) as file:
-                    lines = file.readlines()
-
-                manifest = Box.from_yaml(filename=self.spack.manifest.filename)
-                lines = [
-                    re.sub(
-                        fr"^(.*?)\s({manifest.spack.container.images.os})$",
-                        fr"\1 {image}",
-                        line,
-                    )
-                    for line in lines
-                ]
-
-                with open(self.filename, "w") as file:
-                    file.writelines(lines)
 
             def args(self) -> list[str]:
                 """Arguments passed to the build command.

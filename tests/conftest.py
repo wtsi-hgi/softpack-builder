@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
 from softpack_builder.app import app
+from softpack_builder.service import ServicePlugin
 
 
 @pytest.fixture(autouse=True)
@@ -58,7 +59,7 @@ def service_factory():
         service.start()
         while True:
             try:
-                response = requests.get(app.url())
+                response = requests.get(ServicePlugin.url())
                 if response.status_code == httpx.codes.OK:
                     break
             except requests.ConnectionError:

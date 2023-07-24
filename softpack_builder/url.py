@@ -4,14 +4,34 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import urlparse, urlunparse
+
+import click
 
 from .serializable import Serializable
 
 
 class URL(Serializable):
     """URL building and parsing class."""
+
+    class Parser(click.ParamType):
+        """Click param type for parsing URL."""
+
+        name = "URL"
+
+        def convert(self, value: str, param: Any, ctx: Any) -> "URL":
+            """Converts input string to a URL object.
+
+            Args:
+                value (str): Value to parse
+                param (Any): not used
+                ctx (Any): not used
+
+            Returns:
+                URL: A URL object.
+            """
+            return URL(value)
 
     def __init__(
         self,
@@ -34,17 +54,17 @@ class URL(Serializable):
             query: Query part of the URL.
             fragment: Fragment part of the URL.
         """
-        parts = urlparse(url or "")
+        self.parts = urlparse(url or "")
 
         def select(value: Optional[str], default: str) -> str:
             return value if value is not None else default
 
-        self.scheme = select(scheme, parts.scheme)
-        self.netloc = select(netloc, parts.netloc)
-        self.path = select(path, parts.path)
-        self.params = select(params, parts.params)
-        self.query = select(query, parts.query)
-        self.fragment = select(fragment, parts.fragment)
+        self.scheme = select(scheme, self.parts.scheme)
+        self.netloc = select(netloc, self.parts.netloc)
+        self.path = select(path, self.parts.path)
+        self.params = select(params, self.parts.params)
+        self.query = select(query, self.parts.query)
+        self.fragment = select(fragment, self.parts.fragment)
 
     def urn(self) -> str:
         """Return a Uniform Resource Name (without the protocol).

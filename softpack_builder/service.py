@@ -4,22 +4,28 @@ This source code is licensed under the MIT license found in the
 LICENSE file in the root directory of this source tree.
 """
 
+from datetime import datetime
+from typing import Any
+
 import typer
 import uvicorn
 from fastapi import APIRouter
 from typer import Typer
 from typing_extensions import Annotated
 
-from .api import API
+from softpack_builder import __version__
+
 from .app import app
+from .plugin import Plugin
 
 
-class ServiceAPI(API):
-    """Service module."""
+class ServicePlugin(Plugin):
+    """Service plugin."""
 
-    prefix = "/service"
+    name = "service"
+    prefix = f"/{name}"
     router = APIRouter(prefix=prefix)
-    commands = Typer(help="Commands for managing builder service.")
+    commands = Typer(name=name, help="Commands for managing builder service.")
 
     @staticmethod
     @commands.command(help="Start the SoftPack Builder REST API service.")
@@ -47,3 +53,16 @@ class ServiceAPI(API):
             reload=reload,
             log_level="debug",
         )
+
+    @staticmethod
+    @router.get("/")
+    def status() -> dict[str, Any]:
+        """HTTP GET handler for / route.
+
+        Returns:
+            dict: Application status to return.
+        """
+        return {
+            "time": str(datetime.now()),
+            "softpack": {"builder": {"version": __version__}},
+        }

@@ -24,12 +24,12 @@ from pydantic import BaseModel
 from typer import Typer
 from typing_extensions import Annotated
 
-from .api import API
 from .app import app
 from .artifacts import Artifacts
 from .deployments import DeploymentRegistry
 from .logger import LogMixin
 from .modulefile import ModuleFile
+from .plugin import Plugin
 from .spack import Spack
 
 
@@ -95,7 +95,7 @@ class Environment(LogMixin):
         self.id = context.flow_run.id if context else None
         self.path = self.settings.environments.path / f"{self.id}"
         self.path.mkdir(parents=True, exist_ok=True)
-        self.spack = Spack(self.name, self.path)
+        self.spack = Spack.Environment(self.name, self.path)
         self.artifacts = Artifacts(self.name)
         module, _, cls = self.settings.container.module.rpartition('.')
         module = ".".join([str(Path(__file__).parent.name), module])
@@ -142,7 +142,7 @@ class Environment(LogMixin):
         self.logger.info(
             f"staging environment: name={self.name}, path={self.path}"
         )
-        self.spack.env_create()()
+        self.spack.create()()
         return self
 
     def create_manifest(self) -> "Environment":
@@ -152,7 +152,7 @@ class Environment(LogMixin):
              Environment: A reference to self.
         """
         self.logger.info(f"creating manifest: name={self.name}")
-        self.spack.env_add(self.model.packages)()
+        self.spack.add(self.model.packages)()
         self.artifacts.add(
             self.spack.manifest.filename,
             Path(self.name, self.spack.manifest.filename.name),
@@ -166,7 +166,7 @@ class Environment(LogMixin):
             Environment: A reference to self.
         """
         self.logger.info(f"concretizing environment: name={self.name}")
-        self.spack.env_concretize()()
+        self.spack.concretize()()
         return self
 
     def build_image(self) -> "Environment":
@@ -201,12 +201,13 @@ class Environment(LogMixin):
         return self
 
 
-class EnvironmentAPI(API):
-    """Environment API module."""
+class EnvironmentPlugin(Plugin):
+    """Environment plugin."""
 
-    prefix = "/environments"
+    name = "environment"
+    prefix = f"/{name}s"
     router = APIRouter(prefix=prefix)
-    commands = Typer(help="Commands for managing environments.")
+    commands = Typer(name=name, help="Commands for managing environments.")
     deployments = DeploymentRegistry()
 
     class Status(BaseModel):
@@ -238,7 +239,7 @@ class EnvironmentAPI(API):
         """
         model = Environment.Model.from_yaml(filename)
         response = httpx.post(
-            EnvironmentAPI.url("build"),
+            EnvironmentPlugin.url("build"),
             json={"name": str(name), "model": model.dict()},
         )
         app.echo(yaml.dump(response.json(), sort_keys=False))
@@ -246,7 +247,7 @@ class EnvironmentAPI(API):
     @staticmethod
     @router.post("/build")
     def build_environment_route(
-        params: dict[str, Any], reqyuest: Request
+        params: dict[str, Any], request: Request
     ) -> dict[str, Any]:
         """HTTP POST handler for /build route.
 
@@ -256,10 +257,10 @@ class EnvironmentAPI(API):
         Returns:
             dict: Status from deployment run.
         """
-        response = EnvironmentAPI.deployments.run(
+        response = EnvironmentPlugin.deployments.run(
             build_environment, parameters=params
         )
-        return EnvironmentAPI.Status(**response.dict()).dict()
+        return EnvironmentPlugin.Status(**response.dict()).dict()
 
 
 @Environment.task
@@ -358,7 +359,6 @@ def build_environment(name: str, model: dict[str, Any]) -> dict[str, Any]:
     env = Environment.create(name, model)
     env = cast(Environment, stage_environment.submit(env))
     env = cast(Environment, create_manifest.submit(env))
-    # env = cast(Environment, concretize_environment.submit(env))
 
     env = cast(Environment, build_image.submit(env))
     env = cast(Environment, push_image.submit(env))
@@ -369,4 +369,4 @@ def build_environment(name: str, model: dict[str, Any]) -> dict[str, Any]:
     return context.flow_run
 
 
-EnvironmentAPI.deployments.register([build_environment])
+EnvironmentPlugin.deployments.register([build_environment])
