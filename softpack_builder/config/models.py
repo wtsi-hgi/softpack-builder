@@ -33,7 +33,7 @@ class LoggingConfig(BaseModel):
 class VaultConfig(BaseModel):
     """HashiCorp vault config."""
 
-    url: HttpUrl
+    address: HttpUrl
     path: Path
     token: str
 

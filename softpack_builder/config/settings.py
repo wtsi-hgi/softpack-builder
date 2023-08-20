@@ -116,7 +116,7 @@ class Settings(BaseSettings, Serializable):
             """
             try:
                 client = hvac.Client(
-                    url=vault.url,
+                    url=vault.address,
                     token=vault.token,
                 )
 
@@ -137,8 +137,7 @@ class Settings(BaseSettings, Serializable):
                     }
                 }
 
-            except Exception as e:
-                print(e, file=sys.stderr)
+            except Exception:
                 return {}
 
         @classmethod
