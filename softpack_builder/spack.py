@@ -61,7 +61,7 @@ class Spack(Serializable):
 
     @classmethod
     def command(
-        cls, config: Box, command: str, *args: str, **kwargs: Any
+        cls, config: dict[str, str], command: str, *args: str, **kwargs: Any
     ) -> Command:
         """Spack command wrapper.
 
@@ -75,7 +75,7 @@ class Spack(Serializable):
             Command: A new Command object.
 
         """
-        return cls.Command(config, command, *args, **kwargs)
+        return cls.Command(Box(config), command, *args, **kwargs)
 
     @dataclass
     class Modules:
@@ -318,7 +318,9 @@ class Spack(Serializable):
     class Environment:
         """Spack environment."""
 
-        def __init__(self, name: str, path: Path, spack: Box) -> None:
+        def __init__(
+            self, name: str, path: Path, spack: dict[str, str]
+        ) -> None:
             """Constructor.
 
             Args:
