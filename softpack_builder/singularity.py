@@ -127,7 +127,7 @@ class Singularity(Container):
                 """
                 super().__init__("singularity", command, *args, **kwargs)
 
-        def command(self, command: str, *args: str, **kwargs: str) -> Command:
+        def command(self, command: str, *args: str, **kwargs: Any) -> Command:
             """Singularity command wrapper.
 
             Args:
@@ -173,6 +173,10 @@ class Singularity(Container):
             Returns:
                 Command: A new command object.
             """
+            env = {
+                "USERNAME": registry.username,
+                "PASSWORD": registry.password,
+            }
             command = self.command(
                 "remote",
                 "login",
@@ -181,11 +185,8 @@ class Singularity(Container):
                 "--password",
                 "$PASSWORD",
                 registry.url,
+                env=env,
             )
-            command.env = {
-                "USERNAME": registry.username,
-                "PASSWORD": registry.password,
-            }
             return command
 
         def remote_logout(self) -> Command:
@@ -208,7 +209,7 @@ class Singularity(Container):
                 self.builder = cast(Singularity.Builder, builder)
                 self.settings = self.builder.settings.container.singularity
                 self.spack = Spack.Environment(
-                    self.builder.name, self.builder.path
+                    self.builder.name, self.builder.path, self.builder.spack
                 )
                 self.stage_name = self.__class__.__name__.lower()
                 self.filename = self.builder.path / self.settings.spec.format(

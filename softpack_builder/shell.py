@@ -27,7 +27,6 @@ class ShellCommand(LogMixin):
         """
         super().__init__()
         self.command = " ".join([self.which(command)] + list(map(str, args)))
-        self.env: dict[str, str] = {}
         self.kwargs = kwargs
 
     def which(self, command: str) -> str:
@@ -61,7 +60,6 @@ class ShellCommand(LogMixin):
 
         with ShellOperation(
             commands=[self.command],
-            env=self.env,
             stream_output=True,
             **self.kwargs,
         ) as shell:

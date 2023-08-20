@@ -6,6 +6,7 @@ LICENSE file in the root directory of this source tree.
 
 import importlib
 import itertools
+import os
 import re
 import shutil
 import socket
@@ -36,21 +37,36 @@ class Spack(Serializable):
     class Command(ShellCommand):
         """Spack command."""
 
-        def __init__(self, command: str, *args: str, **kwargs: str):
+        def __init__(
+            self,
+            config: Box,
+            command: str,
+            *args: str,
+            **kwargs: Any,
+        ):
             """Constructor.
 
             Args:
+                config: Spack config
                 command: Spack subcommand to run.
                 *args: Positional arguments.
                 **kwargs: Keyword arguments.
             """
+            kwargs["env"] = {
+                "PATH": os.environ["PATH"]
+                + ":"
+                + str(Spack.settings.spack.path / config.version / "bin")
+            }
             super().__init__("spack", command, *args, **kwargs)
 
     @classmethod
-    def command(cls, command: str, *args: str, **kwargs: str) -> Command:
+    def command(
+        cls, config: Box, command: str, *args: str, **kwargs: Any
+    ) -> Command:
         """Spack command wrapper.
 
         Args:
+            config: Spack config.
             command: Spack subcommand to run.
             *args: Positional arguments.
             **kwargs: Keyword arguments.
@@ -59,7 +75,7 @@ class Spack(Serializable):
             Command: A new Command object.
 
         """
-        return cls.Command(command, *args, **kwargs)
+        return cls.Command(config, command, *args, **kwargs)
 
     @dataclass
     class Modules:
@@ -302,15 +318,17 @@ class Spack(Serializable):
     class Environment:
         """Spack environment."""
 
-        def __init__(self, name: str, path: Path) -> None:
+        def __init__(self, name: str, path: Path, spack: Box) -> None:
             """Constructor.
 
             Args:
                 name: Environment name.
                 path: Environment staging dir.
+                spack: Spack config.
             """
             self.name = name
             self.path = path
+            self.spack = spack
             self.settings = Spack.settings
             self.manifest = self.Manifest(self)
 
@@ -325,6 +343,7 @@ class Spack(Serializable):
                 Command: A new Command object.
             """
             return Spack.command(
+                self.spack,
                 "--env",
                 str(self.path),
                 command,
@@ -339,6 +358,7 @@ class Spack(Serializable):
                 Command: A new Command object
             """
             return Spack.command(
+                self.spack,
                 "env",
                 "create",
                 "--without-view",

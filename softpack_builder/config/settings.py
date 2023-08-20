@@ -24,6 +24,7 @@ from .models import (
     ModulesConfig,
     PackagesConfig,
     ServerConfig,
+    ServicesConfig,
     SpackConfig,
     VaultConfig,
 )
@@ -34,6 +35,7 @@ class Settings(BaseSettings, Serializable):
 
     debug: bool = False
     server: ServerConfig
+    services: ServicesConfig
     logging: LoggingConfig
     spack: SpackConfig
     environments: EnvironmentsConfig

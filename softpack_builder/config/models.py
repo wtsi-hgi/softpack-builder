@@ -17,6 +17,12 @@ class ServerConfig(BaseModel):
     port: int
 
 
+class ServicesConfig(BaseModel):
+    """Server config model."""
+
+    core: HttpUrl
+
+
 class LoggingConfig(BaseModel):
     """Logging config model."""
 
@@ -58,6 +64,7 @@ class SpackConfig(BaseModel):
         spack: dict
         specs: list[SpecConfig]
 
+    path: Path
     cache: Path
     manifest: ManifestConfig
 

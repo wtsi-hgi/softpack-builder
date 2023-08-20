@@ -4,6 +4,9 @@ server:
   host: 0.0.0.0
   port: 7080
 
+services:
+  core: https://127.0.0.1:7082
+
 logging:
   filename: prefect.log
   formatters:
@@ -23,6 +26,7 @@ environments:
   path: /tmp
 
 spack:
+  path: ./spack
   cache: /tmp
   manifest:
     name: spack.yaml

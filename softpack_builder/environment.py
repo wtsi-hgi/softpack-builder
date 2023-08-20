@@ -42,6 +42,13 @@ class Environment(LogMixin):
     class Model:
         """SoftPack environment data model."""
 
+        @dataclass
+        class Spack:
+            """Spack config."""
+
+            version: str
+
+        spack: Spack
         description: str
         packages: list[str]
 
@@ -95,7 +102,7 @@ class Environment(LogMixin):
         self.id = context.flow_run.id if context else None
         self.path = self.settings.environments.path / f"{self.id}"
         self.path.mkdir(parents=True, exist_ok=True)
-        self.spack = Spack.Environment(self.name, self.path)
+        self.env = Spack.Environment(self.name, self.path, self.model.spack)
         self.artifacts = Artifacts(self.name)
         module, _, cls = self.settings.container.module.rpartition('.')
         module = ".".join([str(Path(__file__).parent.name), module])
@@ -104,6 +111,7 @@ class Environment(LogMixin):
             name=self.name,
             path=self.path,
             model=self.model,
+            spack=self.env.spack,
             artifacts=self.artifacts,
         )
         registry = self.artifacts.default_registry(self.name)
@@ -142,7 +150,7 @@ class Environment(LogMixin):
         self.logger.info(
             f"staging environment: name={self.name}, path={self.path}"
         )
-        self.spack.create()()
+        self.env.create()()
         return self
 
     def create_manifest(self) -> "Environment":
@@ -152,10 +160,11 @@ class Environment(LogMixin):
              Environment: A reference to self.
         """
         self.logger.info(f"creating manifest: name={self.name}")
-        self.spack.add(self.model.packages)()
+        for package in self.model.packages:
+            self.env.add([package])()
         self.artifacts.add(
-            self.spack.manifest.filename,
-            Path(self.name, self.spack.manifest.filename.name),
+            self.env.manifest.filename,
+            Path(self.name, self.env.manifest.filename.name),
         )
         return self
 
@@ -166,7 +175,7 @@ class Environment(LogMixin):
             Environment: A reference to self.
         """
         self.logger.info(f"concretizing environment: name={self.name}")
-        self.spack.concretize()()
+        self.env.concretize()()
         return self
 
     def build_image(self) -> "Environment":

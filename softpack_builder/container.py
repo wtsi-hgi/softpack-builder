@@ -25,6 +25,7 @@ class Container(Serializable):
             name: str,
             path: Path,
             model: dict[str, Any],
+            spack: Box,
             artifacts: Artifacts,
         ) -> None:
             """Constructor.
@@ -33,12 +34,14 @@ class Container(Serializable):
                 name: Environment name.
                 path: Environment path.
                 model: Environment model.
+                spack: Spack config.
                 artifacts: Artifact object.
             """
             super().__init__()
             self.name = name
             self.path = path
             self.model = Box(model)
+            self.spack = spack
             self.artifacts = artifacts
 
         def build_image(self) -> None:

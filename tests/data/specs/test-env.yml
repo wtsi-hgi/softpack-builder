@@ -1,4 +1,6 @@
 description: Test Environment
+spack:
+  version: 0.20.1
 packages:
   - ant
   - zlib

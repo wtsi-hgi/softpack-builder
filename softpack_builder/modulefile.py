@@ -93,7 +93,7 @@ class ModuleFile(Serializable):
         Returns:
             str: Template name.
         """
-        for template in self.settings.modules.templates.patterns:
+        for template in self.settings.modules.templates.specs:
             regex = re.compile(template.pattern)
             if list(filter(regex.match, self.model.packages)):
                 return template.name
